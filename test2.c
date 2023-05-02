@@ -1,8 +1,12 @@
+// compilation: gcc -Wall -g -Wextra -std=c99 -o libmessage libmessage.c
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 /**
  * Send a string to a file descriptor.
@@ -18,7 +22,7 @@ int send_string(int fd, char *str) {
         perror("send_string write len");
         return 1;
     }
-    if (write(fd, str, len * sizeof(char)) != len * sizeof(char)) {
+    if (write(fd, str, len) != (ssize_t)len) {
         perror("send_string write str");
         return 1;
     }
@@ -39,13 +43,13 @@ char *recv_string(int fd) {
         perror("recv_string read len");
         return NULL;
     }
-    char *str = malloc(len * sizeof(char) + 1);
+    char *str = malloc((len + 1) * sizeof(char));
     if (str == NULL) {
         perror("recv_string malloc");
         return NULL;
     }
     str[len] = '\0';
-    if (read(fd, str, len * sizeof(char)) != len * sizeof(char)) {
+    if (read(fd, str, len) != (ssize_t)len) {
         perror("recv_string read str");
         return NULL;
     }
@@ -113,5 +117,20 @@ char **recv_argv(int fd) {
 
 
 int main() {
+    int fd = open("baz", O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    char **argv_out = recv_argv(fd);
+    for (size_t i = 0; argv_out[i] != NULL; i++) {
+        printf("%s\n", argv_out[i]);
+    }
+    free(argv_out);
+
+    close(fd);
+    unlink("baz");
     return 0;
 }
+
