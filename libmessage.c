@@ -52,6 +52,14 @@ char *recv_string(int fd) {
     return str;
 }
 
+/**
+ * Send an array of strings to a file descriptor.
+ * 
+ * @param fd The file descriptor to write to.
+ * @param argv The array of strings to write.
+ * 
+ * @return 0 on success, 1 on failure.
+ */
 int send_argv(int fd, char *argv[]) {
     size_t len = 0;
     while (argv[len] != NULL) {
@@ -67,6 +75,40 @@ int send_argv(int fd, char *argv[]) {
         }
     }
     return 0;
+}
+
+
+/**
+ * Receive an array of strings from a file descriptor.
+ * Be careful to free the array and its strings when you're done with it.
+ * 
+ * @param fd The file descriptor to read from.
+ * 
+ * @return The array of strings read from the file descriptor.
+ */
+char **recv_argv(int fd) {
+    size_t len;
+    if (read(fd, &len, sizeof(size_t)) != sizeof(size_t)) {
+        perror("recv_argv read len");
+        return NULL;
+    }
+    char **argv = malloc((len + 1) * sizeof(char *));
+    if (argv == NULL) {
+        perror("recv_argv malloc");
+        return NULL;
+    }
+    for (size_t i = 0; i < len; i++) {
+        argv[i] = recv_string(fd);
+        if (argv[i] == NULL) {
+            for (size_t j = 0; j < i; j++) {
+                free(argv[j]);
+            }
+            free(argv);
+            return NULL;
+        }
+    }
+    argv[len] = NULL;
+    return argv;
 }
 
 
