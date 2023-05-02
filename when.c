@@ -2,19 +2,18 @@
 #include <time.h>
 #include <stdlib.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s <nombre de secondes depuis Epoch>\n", argv[0]);
+        printf("Usage: %s <number of seconds since Epoch>\n", argv[0]);
         return 1;
     }
 
-    time_t temps;
-    char *date_str;
+    time_t t;
+    char *str_date;
 
-    temps = atol(argv[1]);
-    date_str = ctime(&temps);
+    t = atol(argv[1]);
+    str_date = ctime(&t);
 
-    printf("Date : %s\n", date_str);
+    printf("Date : %s\n", str_date);
     return 0;
 }
