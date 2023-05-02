@@ -128,10 +128,17 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    char **argv_in = malloc(3 * sizeof(char *)); // todo : free
+    char **argv_in = malloc(10 * sizeof(char *)); // todo : free
     argv_in[0] = "Hello";
     argv_in[1] = "World";
-    argv_in[2] = NULL;
+    argv_in[2] = "!";
+    argv_in[3] = "This";
+    argv_in[4] = "is";
+    argv_in[5] = "a";
+    argv_in[6] = "test";
+    argv_in[7] = "of";
+    argv_in[8] = "the";
+    argv_in[9] = NULL;
 
     send_argv(fd, argv_in);
 

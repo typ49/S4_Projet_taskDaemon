@@ -127,6 +127,10 @@ int main() {
     for (size_t i = 0; argv_out[i] != NULL; i++) {
         printf("%s\n", argv_out[i]);
     }
+    for (size_t i = 0; argv_out[i] != NULL; i++) {
+        free(argv_out[i]);
+        argv_out[i] = NULL;
+    }
     free(argv_out);
 
     close(fd);
