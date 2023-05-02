@@ -27,6 +27,7 @@ int send_string(int fd, char *str) {
 
 /**
  * Receive a string from a file descriptor.
+ * Be careful to free the string when you're done with it.
  * 
  * @param fd The file descriptor to read from.
  * 
@@ -49,6 +50,23 @@ char *recv_string(int fd) {
         return NULL;
     }
     return str;
+}
+
+int send_argv(int fd, char *argv[]) {
+    size_t len = 0;
+    while (argv[len] != NULL) {
+        len++;
+    }
+    if (write(fd, &len, sizeof(size_t)) != sizeof(size_t)) {
+        perror("send_argv write len");
+        return 1;
+    }
+    for (size_t i = 0; i < len; i++) {
+        if (send_string(fd, argv[i]) != 0) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 
