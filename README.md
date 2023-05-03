@@ -17,11 +17,15 @@ __To compil a specific program :__
 make <program-name>
 ```
 
-__To clean the compiled programs :__
+__To clean intermediate programs :__
 ```sh
 make clean
 ```
 
+__To clean every compiled programs :__
+```sh
+make mrProper
+```
 
 ## Tools :
 > launch_daemon //TODO <br>
