@@ -21,7 +21,10 @@ __To clean the compiled programs :__
 ```sh
 make clean
 ```
-
+## Tools :
+> taskcli START PERIOD CMD [ARG]...
+> taskcli
+>taskd
 
 ## Exercice n°1 :
 > time.c<br> 
