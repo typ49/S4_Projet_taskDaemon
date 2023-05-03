@@ -21,18 +21,21 @@ __To clean the compiled programs :__
 ```sh
 make clean
 ```
+
+
 ## Tools :
-> taskcli START PERIOD CMD [ARG]...<br>
-> taskcli<br>
->taskd<br>
+> launch_daemon //TODO <br>
+> taskcli START PERIOD CMD [ARG]... //TODO <br>
+> taskcli //TODO <br>
+> taskd //TODO <br>
 
 ## Exercice n°1 :
-> time.c<br> 
-> when.c<br>
+> time.c //OVER <br> 
+> when.c //OVER <br>
 
 ## Exercice n°2 :
-> message.c<br>
-> message.h<br>
+> message.c //OVER <br>
+> message.h //OVER <br>
 
 ## Exercice n°3 :
-> pid-taskd-user.c <br>
+> pid-taskd-user.c //OVER <br>
