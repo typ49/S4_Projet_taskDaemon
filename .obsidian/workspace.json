@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "139e580c5b3b25dc",
+        "id": "60168bf066052770",
         "type": "tabs",
         "children": [
           {
-            "id": "1c1705824a0e7e52",
+            "id": "ccf00f50b37a5cd7",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -146,16 +146,18 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "1c1705824a0e7e52",
+  "active": "ccf00f50b37a5cd7",
   "lastOpenFiles": [
+    "sender",
+    "sender.o",
+    "receiver",
+    "receiver.o",
     "libmessage.so",
     "message.o",
+    "README.md",
+    "libdyn.so",
+    "message.d",
     "taskcli",
-    "when",
-    "time",
-    "pid-taskd-user",
-    "receiver",
-    "sender",
-    "taskcli.c"
+    "when"
   ]
 }

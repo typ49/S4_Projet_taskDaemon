@@ -2,9 +2,9 @@
 
 ## Compilation :
 
-__To install  the "libmessage.so" library :__
+__Make sure to setup the library path with :__ 
 ```sh
-make install
+export LD_LIBRARY_PATH=.
 ```
 
 __To compil every programs of the project :__ 

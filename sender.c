@@ -1,4 +1,3 @@
-// compilation: gcc -Wall -g -Wextra -std=c99 -o libmessage libmessage.c
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>

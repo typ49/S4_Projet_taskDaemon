@@ -1,42 +1,26 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -std=c99 -g
+CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g
 LDFLAGS = -L. -lmessage
 
-TARGETS = sender receiver pid-taskd-user time when
+TARGETS = receiver sender
 
-all: libmessage.so $(TARGETS)
-
-libmessage.so: message.o
-	$(CC) -shared -o libmessage.so message.o
-
-message.o: message.c message.h
-	$(CC) $(CFLAGS) -c -fPIC message.c -o message.o
-
-sender: sender.c libmessage.so
-	$(CC) $(CFLAGS) sender.c -o sender $(LDFLAGS)
-
-receiver: receiver.c libmessage.so
-	$(CC) $(CFLAGS) receiver.c -o receiver $(LDFLAGS)
-
-pid-taskd-user: pid-taskd-user.c
-	$(CC) $(CFLAGS) pid-taskd-user.c -o pid-taskd-user
-
-time: time.c
-	$(CC) $(CFLAGS) time.c -o time
-
-when: when.c
-	$(CC) $(CFLAGS) when.c -o when
-
-taskcli: taskcli.c libmessage.so
-	$(CC) $(CFLAGS) taskcli.c -o taskcli $(LDFLAGS)
-
-.PHONY: install
-install:
-	mkdir -p ~/lib
-	cp libmessage.so ~/lib
-	echo "~/lib" >> ~/.bashrc
-	. ~/.bashrc
+SRCS = $(wildcard *.c)
 
 .PHONY: clean
+
+all: $(TARGETS)
+
+$(TARGETS): % : libmessage.so %.o
+	$(CC) $*.o $(LDFLAGS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+message.o: message.c message.h
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+libmessage.so: message.o
+	$(CC) -shared -o $@ $^
+
 clean:
-	rm -f *.o *.so
+	rm -f *.o *.so $(TARGETS)
