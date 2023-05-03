@@ -148,16 +148,17 @@
   },
   "active": "ccf00f50b37a5cd7",
   "lastOpenFiles": [
-    "sender",
+    "when.o",
+    "time.o",
     "sender.o",
-    "receiver",
     "receiver.o",
     "libmessage.so",
     "message.o",
+    "when",
+    "time",
+    "sender",
+    "receiver",
     "README.md",
-    "libdyn.so",
-    "message.d",
-    "taskcli",
-    "when"
+    "libdyn.so"
   ]
 }

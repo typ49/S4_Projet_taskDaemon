@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g
 LDFLAGS = -L. -lmessage
 
-TARGETS = receiver sender
+TARGETS = receiver sender time when
 
 SRCS = $(wildcard *.c)
 
@@ -23,4 +23,7 @@ libmessage.so: message.o
 	$(CC) -shared -o $@ $^
 
 clean:
-	rm -f *.o *.so $(TARGETS)
+	rm -f *.o
+
+mrProper:
+	rm -f *.o $(TARGETS)
