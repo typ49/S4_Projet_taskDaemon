@@ -22,9 +22,9 @@ __To clean the compiled programs :__
 make clean
 ```
 ## Tools :
-> taskcli START PERIOD CMD [ARG]...
-> taskcli
->taskd
+> taskcli START PERIOD CMD [ARG]...<br>
+> taskcli<br>
+>taskd<br>
 
 ## Exercice n°1 :
 > time.c<br> 
