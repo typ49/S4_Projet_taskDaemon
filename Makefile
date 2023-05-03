@@ -2,9 +2,9 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c99 -g
 LDFLAGS = -L. -lmessage
 
-FILES = sender receiver pid-taskd-user time when
+TARGETS = sender receiver pid-taskd-user time when taskcli
 
-all: libmessage.so $(FILES)
+all: libmessage.so $(TARGETS)
 
 libmessage.so: message.o
 	$(CC) -shared -o libmessage.so message.o
@@ -27,8 +27,10 @@ time: time.c
 when: when.c
 	$(CC) $(CFLAGS) when.c -o when
 
-.PHONY: install
+taskcli: taskcli.c libmessage.so
+	$(CC) $(CFLAGS) taskcli.c -o taskcli $(LDFLAGS)
 
+.PHONY: install
 install:
 	mkdir -p ~/lib
 	cp libmessage.so ~/lib
@@ -37,4 +39,4 @@ install:
 
 .PHONY: clean
 clean:
-	rm -f *.o *.so $(FILES)
+	rm -f *.o *.so

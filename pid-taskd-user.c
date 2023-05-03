@@ -24,4 +24,5 @@ int main() {
         return 1;
     }
     printf("%s\n", buf);
+    return 0;
 }
