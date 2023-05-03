@@ -148,14 +148,14 @@
   },
   "active": "1c1705824a0e7e52",
   "lastOpenFiles": [
+    "libmessage.so",
+    "message.o",
     "taskcli",
     "when",
     "time",
     "pid-taskd-user",
     "receiver",
     "sender",
-    "libmessage.so",
-    "message.o",
     "taskcli.c"
   ]
 }
