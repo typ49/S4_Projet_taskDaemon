@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "message.h";
+#include "message.h"
 
 int send_string(int fd, char *str) {
     size_t len = strlen(str);
