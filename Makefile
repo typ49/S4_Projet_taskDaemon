@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c99 -g
 LDFLAGS = -L. -lmessage
 
-TARGETS = sender receiver pid-taskd-user time when taskcli
+TARGETS = sender receiver pid-taskd-user time when
 
 all: libmessage.so $(TARGETS)
 
