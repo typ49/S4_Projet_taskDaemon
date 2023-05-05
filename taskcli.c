@@ -10,8 +10,8 @@
 
 #include "message.h"
 
-#define LINK_PID /tmp/tasks.txt
-#define LINK_FIFO /tmp/tasks.fifo
+#define LINK_PID "/tmp/tasks.txt"
+#define LINK_FIFO "/tmp/tasks.fifo"
 
 time_t get_start(char *argv[]){
     char *endptr;
@@ -74,33 +74,62 @@ pid_t get_taskd_pid() {
     return pid;
 }
 
-
-void send_command(int fifo, char *command[]){
-
+void send_command(int fifo, int argc, char *argv[]) {
+    //using send_argv from message.c
+    if (send_argv(fifo, argv) == -1) {
+        fprintf(stderr, "Error : send_argv\n");
+        unlink(LINK_FIFO);
+        exit(1);
+    }
 }
-void sender(char *argv[], time_t st, time_t pe){
-    if (mkfifo(LINK_FIFO, 0644)) {
+
+void sender(int argc, char *argv[], time_t st, time_t pe){
+    if (mkfifo(LINK_FIFO, 0666)) {
         perror("mkfifo");
         exit(EXIT_FAILURE);
     }
-    //converting the time_t to strings :
-    char start[11] //time_t beeing 2^32 maximum
-    char periode[11]
 
+    // -----Waking up the daemon-------
+    pid_t pid = get_taskd_pid();
+    if(pid == -1) {
+        unlink(LINK_FIFO);
+        exit(1); // the error is print from the fonction
+    }
+    kill(pid, SIGUSR1); 
+    // --------------------------------    
+
+
+    //converting the time_t to strings :
+    //time_t beeing 2^32 maximum, 10 characters should be enough
+    char *start = calloc(11, sizeof(char));
+    char *periode = calloc(11, sizeof(char));
+    
     sprintf(start, "%ld", st);
     sprintf(periode, "%ld", pe);
 
-    //peuvent etre trop petit donc besoin de calloc
-    start[10] = '\0';
-    periode[10] = '\0';
 
     int fifo = open(LINK_FIFO, O_WRONLY);
+
+    
     if (fifo == -1) {
         perror("open");
+        unlink(LINK_FIFO);
         exit(EXIT_FAILURE);
     }
+
+    
+
     send_string(fifo, start);
     send_string(fifo, periode);
+
+    send_command(fifo, argc, argv + 3);
+    
+
+    free(start);
+    free(periode);
+
+    close(fifo);
+    unlink(LINK_FIFO);
 }
 
 int main(int argc, char *argv[]) {
@@ -117,12 +146,7 @@ int main(int argc, char *argv[]) {
     time_t period = get_periode(argv);
     time_t start = get_start(argv);
 
-    // on reveille taskd :
-    pid_t pid = get_taskd_pid();
-    if(pid == -1) {
-        exit(1); // the error is printed from the fonction
-    }
-    printf("pid: %d\n", pid);
-    kill(pid, SIGUSR1); // say hello
+    sender(argc, argv, start, period);
+
     return 0;
 }

@@ -22,14 +22,14 @@ __To clean intermediate programs :__
 make clean
 ```
 
-__To clean every compiled programs :__
+__To clear every compiled programs :__
 ```sh
 make mrProper
 ```
 
 ## Tools :
 > launch_daemon  -> TODO <br>
-> taskcli START PERIOD CMD [ARG]...  -> TODO <br>
+> taskcli START PERIOD CMD [ARG]...  -> _in progress_<br>
 > taskcli  -> _in progress_<br>
 > taskd  -> _in progress_ <br>
 

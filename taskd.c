@@ -12,26 +12,78 @@
 
 #include "message.h"
 
-#define PID_PATH "/tmp/tasks.txt"
+#define LINK_PID "/tmp/tasks.txt"
+#define LINK_FIFO "/tmp/tasks.fifo"
 
 void sigint_handler(){
-    unlink(PID_PATH);
+    unlink(LINK_PID);
     exit(0);
 }
 
+void task(){
+    int fifo = open(LINK_FIFO, O_RDONLY);
+    if(fifo == -1){
+        fprintf(stderr, "Error : open\n");
+        unlink(LINK_PID);
+        exit(1);
+    }
+
+    char *start = recv_string(fifo);
+    if(start == NULL){
+        fprintf(stderr, "Error : recv_string\n");
+        unlink(LINK_PID);
+        exit(1);
+    }
+    char *period = recv_string(fifo);
+    if(period == NULL){
+        fprintf(stderr, "Error : recv_string\n");
+        free(start);
+        unlink(LINK_PID);
+        exit(1);
+    }
+    char **commmand = recv_argv(fifo);
+    if(commmand == NULL){
+        fprintf(stderr, "Error : recv_argv\n");
+        free(start);
+        free(period);
+        unlink(LINK_PID);
+        exit(1);
+    }
+
+    printf("start : %s\n", start);
+    printf("period : %s\n", period);
+    printf("command : ");
+    for(size_t i = 0; commmand[i] != NULL; ++i) {
+        printf("%s ", commmand[i]);
+    }
+    printf("\n");
+
+
+    //----------free memory------------------------
+    free(start);
+    free(period);
+    for(size_t i = 0; commmand[i] != NULL; ++i) {
+        free(commmand[i]);
+    }
+    free(commmand);
+    //---------------------------------------------
+
+    close(fifo);
+}
+
 void sigusr1_handler(){
-    printf("Coucou !\n");
+    task();
 }
 
 int main() {
     // testing /tmp/taskd.pid existance with stats
     struct stat statbuf;
-    if (stat(PID_PATH, &statbuf) != -1) {
-        fprintf(stderr, "A process is currently running taskd.\n");
+    if (stat(LINK_PID, &statbuf) != -1) {
+        fprintf(stderr, "Error : A process is currently running taskd.\n");
         exit(1);
     }
     
-    FILE *f = fopen(PID_PATH, "w");
+    FILE *f = fopen(LINK_PID, "w");
     pid_t pid = getpid();
     fprintf(f, "%d", pid);
     fclose(f);
@@ -52,6 +104,6 @@ int main() {
         pause();
     }
 
-    unlink(PID_PATH);
+    unlink(LINK_PID);
     return 1;
 }

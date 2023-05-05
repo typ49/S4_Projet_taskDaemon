@@ -151,15 +151,15 @@
   "lastOpenFiles": [
     "taskd",
     "taskd.o",
-    "taskd.c",
-    "taskcli.o",
-    "when.o",
-    "time.o",
-    "sender.o",
-    "receiver.o",
-    "message.o",
     "taskcli",
+    "taskcli.o",
     "when",
+    "when.o",
+    "time",
+    "time.o",
+    "sender",
+    "sender.o",
+    "receiver",
     "README.md"
   ]
 }
