@@ -28,18 +28,18 @@ make mrProper
 ```
 
 ## Tools :
-> launch_daemon //TODO <br>
-> taskcli START PERIOD CMD [ARG]... //TODO <br>
-> taskcli //TODO <br>
-> taskd //TODO <br>
+> launch_daemon  -> TODO <br>
+> taskcli START PERIOD CMD [ARG]...  -> TODO <br>
+> taskcli  -> _in progress_<br>
+> taskd  -> _in progress_ <br>
 
 ## Exercice n°1 :
-> time.c //OVER <br> 
-> when.c //OVER <br>
+> time.c  -> OVER <br> 
+> when.c  -> OVER <br>
 
 ## Exercice n°2 :
-> message.c //OVER <br>
-> message.h //OVER <br>
+> message.c  -> OVER <br>
+> message.h  -> OVER <br>
 
 ## Exercice n°3 :
-> pid-taskd-user.c //OVER <br>
+> pid-taskd-user.c -> OVER <br>

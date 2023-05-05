@@ -1,14 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g
+CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g -D_DEFAULT_SOURCE
 LDFLAGS = -L. -lmessage
 
-TARGETS = receiver sender time when
+TARGETS = receiver sender time when taskcli taskd
 
 SRCS = $(wildcard *.c)
 
 .PHONY: clean
 
-all: $(TARGETS)
+all: $(TARGETS) libmessage.so
 
 $(TARGETS): % : libmessage.so %.o
 	$(CC) $*.o $(LDFLAGS) -o $@
@@ -26,4 +26,4 @@ clean:
 	rm -f *.o
 
 mrProper:
-	rm -f *.o $(TARGETS)
+	rm -f *.o *.so $(TARGETS)

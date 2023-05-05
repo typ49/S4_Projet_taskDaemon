@@ -65,7 +65,8 @@
               "state": {}
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -148,17 +149,17 @@
   },
   "active": "ccf00f50b37a5cd7",
   "lastOpenFiles": [
+    "taskd",
+    "taskd.o",
+    "taskd.c",
+    "taskcli.o",
     "when.o",
     "time.o",
     "sender.o",
     "receiver.o",
-    "libmessage.so",
     "message.o",
+    "taskcli",
     "when",
-    "time",
-    "sender",
-    "receiver",
-    "README.md",
-    "libdyn.so"
+    "README.md"
   ]
 }
