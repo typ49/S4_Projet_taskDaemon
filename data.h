@@ -5,9 +5,9 @@
 
 struct reg {
     size_t num_cmd;
-    size_t start;
+    time_t start;
     size_t period;
-    char *cmd[];
+    char **cmd;
 };
 
 /**
@@ -20,7 +20,7 @@ struct reg {
  * 
  * @return The reg
 */
-struct reg create_register(size_t num_cmd, size_t start, size_t period, char *cmd[]);
+struct reg create_register(size_t num_cmd, time_t start, size_t period, char *cmd[]);
 
 
 /**

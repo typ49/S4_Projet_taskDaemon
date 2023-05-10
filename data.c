@@ -6,7 +6,7 @@
 #include "data.h"
 
 
-struct reg create_register(size_t num_cmd, size_t start, size_t period, char *cmd[])
+struct reg create_register(size_t num_cmd, time_t start, size_t period, char **cmd)
 {
     struct reg reg;
     reg.num_cmd = num_cmd;
@@ -26,7 +26,8 @@ char *register_to_string(struct reg reg)
         len += strlen(reg.cmd[i]) + 1;
     }
     // 2. size the num_cmd and period fields
-    len += 2 * sizeof(size_t);
+    len += sizeof(size_t);
+    len += sizeof(time_t);
     // 3. size of the start fieldh
     len += 21; // a date with the maximum size beeing : '10 septembre 23:59:59'
     // 4. size of the ';' and '\0'
@@ -62,6 +63,6 @@ void destroy_registerArray(registerArray *regArray)
 }
 
 
-public static void main(String[] args) {
+int main() {
     System.out.println("Hello, World");
 }
