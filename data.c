@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <locale.h>
 
 #include "data.h"
 
@@ -18,6 +19,21 @@ struct reg create_register(size_t num_cmd, time_t start, size_t period, char **c
 
 char *register_to_string(struct reg reg)
 {
+
+    struct tm *tm;
+
+    // Définir la locale en français
+    setlocale(LC_TIME, "fr_FR");
+
+    // Obtenir la structure tm pour la date actuelle
+    tm = localtime(&reg.start);
+
+    
+
+
+
+
+
     // calculate the size of the string
     // 1. size of the command
     size_t len = 0;
@@ -43,6 +59,8 @@ char *register_to_string(struct reg reg)
     // add the start field
     char *start = ctime(&reg.start);
     start[strlen(start) - 1] = '\0'; // remove the '\n' at the end
+    // Formater la date en français
+    strftime(start, 21, "%d %B %H:%M:%S", tm);
     strcat(res, start);
 
     // add the period field
@@ -74,3 +92,5 @@ int main()
     free(str);
     return 0;
 }
+
+// gcc -Wall -Wextra -std=c99 -pedantic -o data data.c
