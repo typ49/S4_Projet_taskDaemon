@@ -86,7 +86,7 @@ char *register_to_string(struct reg reg)
 
 int main()
 {
-    struct reg reg = create_register(1, time(NULL), 0, (char *[]){"ls", "/tmp", NULL});
+    struct reg reg = create_register(1, 0, 0, (char *[]){"ls", "/tmp", NULL});
     char *str = register_to_string(reg);
     printf("%s\n", str);
     free(str);
