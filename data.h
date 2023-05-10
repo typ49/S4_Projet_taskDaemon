@@ -1,11 +1,14 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-
-struct register {
+struct reg {
     size_t num_cmd;
     size_t start;
     size_t period;
     char *cmd[];
-}
+};
 
 /**
  * Create a register with the given parameters
@@ -15,9 +18,9 @@ struct register {
  * @param period Period in seconds between two executions
  * @param cmd[] The command to execute (with its arguments) last argument must be NULL
  * 
- * @return The register
+ * @return The reg
 */
-struct register create_register(size_t num_cmd, size_t start, size_t period, char *cmd[]);
+struct reg create_register(size_t num_cmd, size_t start, size_t period, char *cmd[]);
 
 
 /**
@@ -27,17 +30,20 @@ struct register create_register(size_t num_cmd, size_t start, size_t period, cha
  * 
  * 3;18 avril 10:44:57;0;ls /tmp/tasks
  * 
+ * make sure to free the result
+ * 
  * @param reg The register
  * 
  * @return The command to execute
 */
-char *register_to_string(struct register reg);
+char *register_to_string(struct reg reg);
 
 
 struct registerArray {
     size_t size;
-    struct register *array[];
-}
+    size_t capacity;
+    struct reg *array[];
+};
 
 /**
  * Create a register array with the given size
@@ -57,7 +63,7 @@ struct registerArray create_registerArray(size_t size);
  * 
  * @return void
 */
-void add_register(struct registerArray *regArray, struct register reg);
+void add_register(struct registerArray *regArray, struct reg reg);
 
 
 /**
@@ -70,3 +76,12 @@ void add_register(struct registerArray *regArray, struct register reg);
 */
 void suppress_register(struct registerArray *regArray, size_t num_cmd);
 
+
+/**
+ * Destroy the register array and free the memory
+ * 
+ * @param regArray The register array to destroy
+ * 
+ * @return void
+*/
+void destroy_registerArray(struct registerArray *regArray);
