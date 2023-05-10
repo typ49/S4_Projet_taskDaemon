@@ -6,7 +6,6 @@
 
 #include "data.h"
 
-
 struct reg create_register(size_t num_cmd, time_t start, size_t period, char **cmd)
 {
     struct reg reg;
@@ -22,17 +21,7 @@ char *register_to_string(struct reg reg)
 
     struct tm *tm;
 
-    // Définir la locale en français
-    setlocale(LC_TIME, "fr_FR");
-
-    // Obtenir la structure tm pour la date actuelle
     tm = localtime(&reg.start);
-
-    
-
-
-
-
 
     // calculate the size of the string
     // 1. size of the command
@@ -42,8 +31,8 @@ char *register_to_string(struct reg reg)
         len += strlen(reg.cmd[i]) + 1;
     }
     // 2. size the num_cmd and period fields
-    len += sizeof(size_t);
-    len += sizeof(time_t);
+    len += 20;
+    len += 20;
     // 3. size of the start fieldh
     len += 21; // a date with the maximum size beeing : '10 septembre 23:59:59'
     // 4. size of the ';' and '\0'
@@ -59,7 +48,8 @@ char *register_to_string(struct reg reg)
     // add the start field
     char *start = ctime(&reg.start);
     start[strlen(start) - 1] = '\0'; // remove the '\n' at the end
-    // Formater la date en français
+
+    // format the date to the french format
     strftime(start, 21, "%d %B %H:%M:%S", tm);
     strcat(res, start);
 
@@ -77,12 +67,52 @@ char *register_to_string(struct reg reg)
     return res;
 }
 
-// void destroy_registerArray(struct registerArray *regArray)
-// {
-// }
+registerArray create_registerArray(size_t size)
+{
+    registerArray regArray;
+    regArray.size = size;
+    regArray.capacity = size;
+    regArray.array = calloc(size, sizeof(struct reg));
+    return regArray;
+}
 
+void add_register(registerArray *regArray, reg reg)
+{
+    if (regArray->size == regArray->capacity)
+    {
+        regArray->capacity *= 2;
+        regArray->array = realloc(regArray->array, regArray->capacity * sizeof(struct reg));
+    }
+    regArray->array[regArray->size] = reg;
+    regArray->size++;
+}
 
+void suppress_register(registerArray *regArray, size_t num_cmd)
+{
+    for (size_t i = 0; i < regArray->size; ++i)
+    {
+        if (regArray->array[i].num_cmd == num_cmd)
+        {
+            for (size_t j = i; j < regArray->size - 1; ++j)
+            {
+                regArray->array[j] = regArray->array[j + 1];
+            }
+            regArray->size--;
+            return;
+        }
+    }
+}
 
+void destroy_registerArray(struct registerArray *regArray)
+{
+    for (size_t i = 0; i < regArray->size; ++i)
+    {
+        free(regArray->array[i].cmd);
+    }
+    free(regArray->array);
+    regArray->size = 0;
+    regArray->capacity = 0;
+}
 
 int main()
 {
