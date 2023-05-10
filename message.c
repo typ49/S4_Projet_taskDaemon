@@ -1,4 +1,3 @@
-// compilation: gcc -Wall -g -Wextra -std=c99 -o message message.c
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>

@@ -12,8 +12,9 @@
 
 #include "message.h"
 
-#define LINK_PID "/tmp/tasks.txt"
+#define LINK_PID "/tmp/tasks.pid"
 #define LINK_FIFO "/tmp/tasks.fifo"
+#define LINK_TASKS "/tmp/tasks.txt"
 
 void sigint_handler(){
     unlink(LINK_PID);
@@ -86,7 +87,12 @@ int main() {
     FILE *f = fopen(LINK_PID, "w");
     pid_t pid = getpid();
     fprintf(f, "%d", pid);
-    fclose(f);
+    if(fclose(f) == -1){
+        fprintf(stderr, "Error : fclose\n");
+        unlink(LINK_PID);
+        exit(1);
+    }
+    
 
     struct sigaction a;
     a.sa_handler = sigint_handler;
@@ -100,10 +106,34 @@ int main() {
     sigemptyset(&a2.sa_mask);
     sigaction(SIGUSR1, &a2, NULL);
 
+
+    // creating the fifo if does not exist
+    struct stat statbuf2;
+    if (stat(LINK_FIFO, &statbuf2) == -1) {
+        if (mkfifo(LINK_FIFO, 0666)) {
+            perror("mkfifo");
+            unlink(LINK_PID);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    //creating the tasks.txt if does not exist trunc it if it does
+    int tasks = open(LINK_TASKS, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+
+    //S’il n’existe pas, créer le répertoire /tmp/tasks.
+    struct stat statbuf3;
+    if (stat("/tmp/tasks", &statbuf3) == -1) {
+        if (mkdir("/tmp/tasks", 0777)) {
+            perror("mkdir");
+            unlink(LINK_PID);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+
     while(1){
         pause();
     }
-
     unlink(LINK_PID);
     return 1;
 }

@@ -10,8 +10,9 @@
 
 #include "message.h"
 
-#define LINK_PID "/tmp/tasks.txt"
+#define LINK_PID "/tmp/tasks.pid"
 #define LINK_FIFO "/tmp/tasks.fifo"
+#define LINK_TASKS "/tmp/tasks.txt"
 
 time_t get_start(char *argv[]){
     char *endptr;
@@ -74,25 +75,20 @@ pid_t get_taskd_pid() {
     return pid;
 }
 
-void send_command(int fifo, int argc, char *argv[]) {
+void send_command(int fifo, char *argv[]) {
     //using send_argv from message.c
     if (send_argv(fifo, argv) == -1) {
         fprintf(stderr, "Error : send_argv\n");
-        unlink(LINK_FIFO);
         exit(1);
     }
 }
 
-void sender(int argc, char *argv[], time_t st, time_t pe){
-    if (mkfifo(LINK_FIFO, 0666)) {
-        perror("mkfifo");
-        exit(EXIT_FAILURE);
-    }
+void sender(char *argv[], time_t st, time_t pe){
+    
 
     // -----Waking up the daemon-------
     pid_t pid = get_taskd_pid();
     if(pid == -1) {
-        unlink(LINK_FIFO);
         exit(1); // the error is print from the fonction
     }
     kill(pid, SIGUSR1); 
@@ -113,7 +109,6 @@ void sender(int argc, char *argv[], time_t st, time_t pe){
     
     if (fifo == -1) {
         perror("open");
-        unlink(LINK_FIFO);
         exit(EXIT_FAILURE);
     }
 
@@ -122,20 +117,63 @@ void sender(int argc, char *argv[], time_t st, time_t pe){
     send_string(fifo, start);
     send_string(fifo, periode);
 
-    send_command(fifo, argc, argv + 3);
+    send_command(fifo, argv + 3);
     
 
     free(start);
     free(periode);
 
     close(fifo);
-    unlink(LINK_FIFO);
+}
+
+void read_tasks() {
+    int fd = open(LINK_TASKS, O_RDONLY);
+    if (fd == -1) {
+        perror("open tasks.txt");
+        exit(EXIT_FAILURE);
+    }
+
+    //-------------Verrou du fichier-----------------
+    struct flock lock;
+    lock.l_type = F_WRLCK;        // Exclusive (write) lock
+    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock.l_start = 0;             // Start offset for the lock
+    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+
+    if (fcntl(fd, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(fd);
+        exit(1);
+    }
+    //-----------------------------------------------
+
+
+    if (fd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+    char buf[1024];
+    ssize_t sz;
+    while((sz = read(fd, buf, 1024)) > 0) {
+        fwrite(buf, sizeof(char), sz, stdout);
+    }
+
+
+    //------Déverrouillage du fichier----------------
+    lock.l_type = F_UNLCK;
+    if (fcntl(fd, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(fd);
+        exit(1);
+    }
+    //-----------------------------------------------
+
+    close(fd);
 }
 
 int main(int argc, char *argv[]) {
     if(argc == 1) {
-        // TODO : reading /tmp/tasks.txt
-        printf("not done yet\n");
+        read_tasks();
         exit(0);
     }else if(argc < 4) {
         fprintf(stderr, "Error : Invalid number of arguments.\n");
@@ -146,7 +184,7 @@ int main(int argc, char *argv[]) {
     time_t period = get_periode(argv);
     time_t start = get_start(argv);
 
-    sender(argc, argv, start, period);
+    sender(argv, start, period);
 
     return 0;
 }

@@ -18,8 +18,19 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "f3d3ffb1fb5bb02a",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.2.8"
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -65,8 +76,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -147,19 +157,19 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "ccf00f50b37a5cd7",
+  "active": "f3d3ffb1fb5bb02a",
   "lastOpenFiles": [
+    "data.h",
+    "data.c",
     "taskd",
     "taskd.o",
-    "taskcli",
     "taskcli.o",
-    "when",
     "when.o",
-    "time",
     "time.o",
-    "sender",
     "sender.o",
-    "receiver",
+    "receiver.o",
+    "message.o",
+    "taskcli",
     "README.md"
   ]
 }

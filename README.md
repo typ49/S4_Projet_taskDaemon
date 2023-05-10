@@ -29,8 +29,8 @@ make mrProper
 
 ## Tools :
 > launch_daemon  -> TODO <br>
-> taskcli START PERIOD CMD [ARG]...  -> _in progress_<br>
-> taskcli  -> _in progress_<br>
+> taskcli START PERIOD CMD [ARG]...  -> OVER<br>
+> taskcli  -> _over_<br>
 > taskd  -> _in progress_ <br>
 
 ## Exercice n°1 :
