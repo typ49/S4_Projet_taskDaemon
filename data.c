@@ -67,16 +67,16 @@ char *register_to_string(struct reg reg)
     return res;
 }
 
-registerArray create_registerArray(size_t size)
+struct registerArray create_registerArray(size_t size)
 {
-    registerArray regArray;
+    struct registerArray regArray;
     regArray.size = size;
     regArray.capacity = size;
-    regArray.array = calloc(size, sizeof(struct reg));
+    regArray.array = malloc(size*sizeof(struct reg));
     return regArray;
 }
 
-void add_register(registerArray *regArray, reg reg)
+void add_register(struct registerArray *regArray, struct reg reg)
 {
     if (regArray->size == regArray->capacity)
     {
@@ -87,7 +87,7 @@ void add_register(registerArray *regArray, reg reg)
     regArray->size++;
 }
 
-void suppress_register(registerArray *regArray, size_t num_cmd)
+void suppress_register(struct registerArray *regArray, size_t num_cmd)
 {
     for (size_t i = 0; i < regArray->size; ++i)
     {
@@ -109,17 +109,23 @@ void destroy_registerArray(struct registerArray *regArray)
     {
         free(regArray->array[i].cmd);
     }
-    free(regArray->array);
     regArray->size = 0;
     regArray->capacity = 0;
 }
 
 int main()
 {
-    struct reg reg = create_register(1, 0, 0, (char *[]){"ls", "/tmp", NULL});
+    setlocale(LC_ALL, "fr_FR.UTF-8");
+
+    char *cmd[] = {"ls", "-l", NULL};
+    struct reg reg = create_register(1, time(NULL), 0, cmd);
     char *str = register_to_string(reg);
     printf("%s\n", str);
     free(str);
+
+    struct registerArray regArray = create_registerArray(1);
+    add_register(&regArray, reg);
+    destroy_registerArray(&regArray);
     return 0;
 }
 

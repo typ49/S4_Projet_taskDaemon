@@ -42,7 +42,7 @@ char *register_to_string(struct reg reg);
 struct registerArray {
     size_t size;
     size_t capacity;
-    struct reg *array[];
+    struct reg *array;
 };
 
 /**
