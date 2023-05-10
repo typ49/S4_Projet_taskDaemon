@@ -8,9 +8,9 @@ SRCS = $(wildcard *.c)
 
 .PHONY: clean
 
-all: $(TARGETS) libmessage.so
+all: $(TARGETS) libmessage.so libdata.so
 
-$(TARGETS): % : libmessage.so %.o
+$(TARGETS): % : libmessage.so libdata.so %.o
 	$(CC) $*.o $(LDFLAGS) -o $@
 
 %.o: %.c
@@ -20,6 +20,12 @@ message.o: message.c message.h
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 libmessage.so: message.o
+	$(CC) -shared -o $@ $^
+
+data.o: data.c data.h
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+libdata.so: data.o
 	$(CC) -shared -o $@ $^
 
 clean:
