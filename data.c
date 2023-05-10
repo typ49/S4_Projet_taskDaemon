@@ -56,13 +56,21 @@ char *register_to_string(struct reg reg)
         strcat(res, reg.cmd[i]);
         strcat(res, " ");
     }
+    return res;
 }
 
-void destroy_registerArray(registerArray *regArray)
+// void destroy_registerArray(struct registerArray *regArray)
+// {
+// }
+
+
+
+
+int main()
 {
-}
-
-
-int main() {
-    System.out.println("Hello, World");
+    struct reg reg = create_register(1, time(NULL), 0, (char *[]){"ls", "/tmp", NULL});
+    char *str = register_to_string(reg);
+    printf("%s\n", str);
+    free(str);
+    return 0;
 }
