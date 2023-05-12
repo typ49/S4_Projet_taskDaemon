@@ -35,8 +35,8 @@ char *register_to_string(struct reg reg)
     len += 20;
     // 3. size of the start fieldh
     len += 21; // a date with the maximum size beeing : '10 septembre 23:59:59'
-    // 4. size of the ';' and '\0'
-    len += 4;
+    // 4. size of the ';' , '\n' and '\0'
+    len += 5;
 
     // create the string with calloc so no need to add the '\0' at the end
     char *res = calloc(len, sizeof(char));
@@ -64,6 +64,7 @@ char *register_to_string(struct reg reg)
         strcat(res, reg.cmd[i]);
         strcat(res, " ");
     }
+    strcat(res, "\n");
     return res;
 }
 

@@ -42,6 +42,7 @@ int send_argv(int fd, char *argv[]);
 
 /**
  * Receive an array of strings from a file descriptor.
+ * Last element of the array is NULL.
  * Be careful to free the array and its strings when you're done with it.
  * 
  * @param fd The file descriptor to read from.

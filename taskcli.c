@@ -133,9 +133,9 @@ void read_tasks() {
         exit(EXIT_FAILURE);
     }
 
-    //-------------Verrou du fichier-----------------
+    //-------------Locking the file------------------
     struct flock lock;
-    lock.l_type = F_WRLCK;        // Exclusive (write) lock
+    lock.l_type = F_RDLCK;        // Read lock
     lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
     lock.l_start = 0;             // Start offset for the lock
     lock.l_len = 0;               // Lock the entire file; 0 means to EOF
@@ -143,33 +143,34 @@ void read_tasks() {
     if (fcntl(fd, F_SETLKW, &lock) == -1) {
         perror("fcntl");
         close(fd);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     //-----------------------------------------------
 
-
-    if (fd == -1) {
-        perror("open");
-        exit(EXIT_FAILURE);
-    }
     char buf[1024];
     ssize_t sz;
-    while((sz = read(fd, buf, 1024)) > 0) {
-        fwrite(buf, sizeof(char), sz, stdout);
+    while((sz = read(fd, buf, sizeof(buf) - 1)) > 0) {
+        buf[sz] = '\0'; // ensure null-termination
+        printf("%s", buf);
     }
 
+    if (sz == -1) {
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
 
-    //------Déverrouillage du fichier----------------
+    //---------Unlocking the file--------------------
     lock.l_type = F_UNLCK;
     if (fcntl(fd, F_SETLKW, &lock) == -1) {
         perror("fcntl");
         close(fd);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     //-----------------------------------------------
 
     close(fd);
 }
+
 
 int main(int argc, char *argv[]) {
     if(argc == 1) {

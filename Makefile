@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g -D_DEFAULT_SOURCE
-LDFLAGS = -L. -lmessage
+LDFLAGS = -L. -lmessage -ldata
 
 TARGETS = receiver sender time when taskcli taskd
 
@@ -10,8 +10,8 @@ SRCS = $(wildcard *.c)
 
 all: $(TARGETS) libmessage.so libdata.so
 
-$(TARGETS): % : libmessage.so libdata.so %.o
-	$(CC) $*.o $(LDFLAGS) -o $@
+$(TARGETS): % : %.o libdata.so libmessage.so
+	$(CC) $*.o -o $@ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -fPIC -c $< -o $@
@@ -27,6 +27,7 @@ data.o: data.c data.h
 
 libdata.so: data.o
 	$(CC) -shared -o $@ $^
+
 
 clean:
 	rm -f *.o

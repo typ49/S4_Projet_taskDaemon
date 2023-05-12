@@ -24,7 +24,7 @@ struct reg create_register(size_t num_cmd, time_t start, size_t period, char *cm
 
 
 /**
- * Get the register to the format : num_cmd;start;period;cmd
+ * Get the register to the format : num_cmd;start;period;cmd '\n'
  * 
  * With start beeing the lettre version of the start time for exemple :
  * 
