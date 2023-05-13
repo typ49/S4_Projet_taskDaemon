@@ -24,7 +24,9 @@ struct registerArray regArray;
 
 void exit_program(bool error){
     unlink(LINK_PID);
-    destroy_registerArray(&regArray);
+    if (regArray.capacity > 0) {
+        destroy_registerArray(&regArray);
+    }
     if(error){
         exit(EXIT_FAILURE);
     }
@@ -85,14 +87,14 @@ void task(){
     size_t period_time = atol(period);
     free(period);
 
-    char **commmand = recv_argv(fifo);
-    if(commmand == NULL){
+    char **command = recv_argv(fifo); // is free when its container register is destroyed
+    if(command == NULL){
         fprintf(stderr, "Error : recv_argv\n");
         exit_program(true);
     }
 
     //creating the data structure
-    struct reg reg = create_register(getAvailableID(), start_time, period_time, commmand);
+    struct reg reg = create_register(getAvailableID(), start_time, period_time, command);
     add_register(&regArray, reg);
     
     //open tasks.txt in append mode
@@ -102,7 +104,6 @@ void task(){
         exit_program(true);
     }
     char *line = register_to_string(reg);
-    printf("line : %s", line);
     if(write(tasks, line, strlen(line)) == -1){
         fprintf(stderr, "task write\n");
         exit_program(true);
@@ -113,16 +114,110 @@ void task(){
         exit_program(true);
     }
 
-
-    //----------free memory------------------------
-    for(size_t i = 0; commmand[i] != NULL; ++i) {
-        free(commmand[i]);
-    }
-    free(commmand);
-    //---------------------------------------------
-
     close(fifo);
 }
+
+/**
+ * Get the waiting time before the next task
+ * 
+ * @return the waiting time in seconds -1 if there is no task
+*/
+time_t get_waitingTime() {
+    time_t now = time(NULL);
+    time_t min = -1;
+    for(size_t i = 0; i < regArray.size; ++i) {
+        if (regArray.array[i].start <= now) {
+            if (regArray.array[i].period == 0) {
+                // this part is very important because without it, the function would
+                // return -1 for a period of 0 seconds
+                return 0;
+            }
+            time_t delta = regArray.array[i].period - (now - regArray.array[i].start) % regArray.array[i].period - 1;
+            if (delta < min || min == -1) {
+                min = delta;
+            }
+        }
+    }
+    return min;
+}
+
+struct registerArray get_currentTasks(){
+    time_t now = time(NULL);
+    struct registerArray currentTasks = create_registerArray(regArray.size);
+    for(size_t i = 0; i < regArray.size; ++i) {
+        if (regArray.array[i].period == 0){
+            add_register(&currentTasks, copy_reg(&regArray.array[i]));
+        }else{
+            time_t delta = regArray.array[i].period - (now - regArray.array[i].start) % regArray.array[i].period - 1;
+            if (delta == 0) {
+                add_register(&currentTasks, copy_reg(&regArray.array[i]));
+            }
+        }
+    }
+    return currentTasks;
+}
+
+void sigalrm_handler() {
+    struct registerArray currentTasks = get_currentTasks();
+    if (currentTasks.size == 0) {
+        perror("sigalrm_handler currentTasks.size is null");
+        return;
+    }
+    for (size_t i = 0; i < currentTasks.size; ++i) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("sigalrm_handler fork");
+            exit_program(true);
+        }
+        if (pid == 0) {
+            execvp(currentTasks.array[i].cmd[0], currentTasks.array[i].cmd);
+            perror("sigalrm_handler execvp");
+            exit_program(true);
+        }
+        if(currentTasks.array[i].period == 0){
+            suppress_register(&regArray, currentTasks.array[i].num_cmd);
+        }
+    }
+    destroy_registerArray(&currentTasks);
+    while (wait(NULL) != -1);   
+    sleep(1);
+}
+
+
+
+
+/**
+ * init the registerArray with the tasks in tasks.txt
+*/
+// void init_regArray(){
+//     int tasks = open(LINK_TASKS, O_RDONLY);
+//     if(tasks == -1){
+//         fprintf(stderr, "init_regArray open\n");
+//         exit_program(true);
+//     }
+//     // reading the file's lines one by one
+//     // eache line is a task in the format : num_cmd;start;period;cmd
+//     char line[100]; // a line can't be longer than 100 characters
+//     while(read_line(tasks, line, sizeof(line)) != 0){
+//         // parsing the line
+//         size_t num_cmd;
+//         time_t start;
+//         size_t period;
+//         char **cmd;
+//         if(sscanf(line, "%d;%ld;%zu;", &num_cmd, &start, &period) != 3){
+//             fprintf(stderr, "init_regArray sscanf\n");
+//             exit_program(true);
+//         }
+//         cmd = recv_argv(tasks);
+//         if(cmd == NULL){
+//             fprintf(stderr, "init_regArray recv_argv\n");
+//             exit_program(true);
+//         }
+//         // creating the data structure
+//         struct reg reg = create_register(num_cmd, start, period, cmd);
+//         add_register(&regArray, reg);
+//     }
+// }
 
 int main() {
     // testing /tmp/taskd.pid existance with stats
@@ -156,6 +251,13 @@ int main() {
     sigemptyset(&a2.sa_mask);
     sigaction(SIGUSR1, &a2, NULL);
 
+    struct sigaction a3;
+    a3.sa_handler = sigalrm_handler;
+    a3.sa_flags = 0;
+    sigemptyset(&a3.sa_mask);
+    sigaction(SIGALRM, &a3, NULL);
+
+
 
     // creating the fifo if does not exist
     struct stat statbuf2;
@@ -184,9 +286,20 @@ int main() {
         }
     }
 
-
+    time_t waitingTime;
     while(1){
-        pause();
+        waitingTime = get_waitingTime();
+        if (waitingTime == -1) {
+            // no command to execute
+            // we wait for a signal to add one
+            pause();
+        } else if (waitingTime == 0) {
+            kill(getpid(), SIGALRM);
+        } else {
+            alarm(waitingTime);
+            // we wait for a signal (SIGALRM)
+            pause();
+        }
     }
     exit_program(true);
 }

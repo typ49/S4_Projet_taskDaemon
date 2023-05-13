@@ -24,6 +24,16 @@ struct reg create_register(size_t num_cmd, time_t start, size_t period, char *cm
 
 
 /**
+ * Copy a register.
+ * Be carefull to free the memory of its cmd
+ * 
+ * @param source The register to copy
+ * 
+ * @return The copy of the register
+*/
+struct reg copy_reg(const struct reg *source);
+
+/**
  * Get the register to the format : num_cmd;start;period;cmd '\n'
  * 
  * With start beeing the lettre version of the start time for exemple :
@@ -46,13 +56,13 @@ struct registerArray {
 };
 
 /**
- * Create a register array with the given size
+ * Create a register array with the given capacity
  * 
- * @param size The size of the array
+ * @param capacity The capacity of the array
  * 
  * @return The register array
 */
-struct registerArray create_registerArray(size_t size);
+struct registerArray create_registerArray(size_t capacity);
 
 
 /**

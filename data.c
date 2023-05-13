@@ -16,6 +16,36 @@ struct reg create_register(size_t num_cmd, time_t start, size_t period, char **c
     return reg;
 }
 
+struct reg copy_reg(const struct reg *source) {
+    struct reg copy;
+    copy.num_cmd = source->num_cmd;
+    copy.start = source->start;
+    copy.period = source->period;
+
+    size_t cmd_count = 0;
+    while (source->cmd[cmd_count] != NULL) {
+        cmd_count++;
+    }
+
+    copy.cmd = malloc((cmd_count + 1) * sizeof(char *));
+    if (copy.cmd == NULL) {
+        perror("copy_reg malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < cmd_count; ++i) {
+        copy.cmd[i] = strdup(source->cmd[i]);
+        if (copy.cmd[i] == NULL) {
+            perror("copy_reg strdup");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    copy.cmd[cmd_count] = NULL;
+    return copy;
+}
+
+
 char *register_to_string(struct reg reg)
 {
 
@@ -68,12 +98,14 @@ char *register_to_string(struct reg reg)
     return res;
 }
 
-struct registerArray create_registerArray(size_t size)
+
+
+struct registerArray create_registerArray(size_t capacity)
 {
     struct registerArray regArray;
-    regArray.size = size;
-    regArray.capacity = size;
-    regArray.array = malloc(size*sizeof(struct reg));
+    regArray.size = 0;
+    regArray.capacity = capacity;
+    regArray.array = malloc(capacity*sizeof(struct reg));
     return regArray;
 }
 
@@ -94,10 +126,11 @@ void suppress_register(struct registerArray *regArray, size_t num_cmd)
     {
         if (regArray->array[i].num_cmd == num_cmd)
         {
-            for (size_t j = i; j < regArray->size - 1; ++j)
-            {
-                regArray->array[j] = regArray->array[j + 1];
+            char **command = regArray->array[i].cmd;
+            for(size_t j = 0; command[j] != NULL; ++j) {
+                free(command[j]);
             }
+            free(command);
             regArray->size--;
             return;
         }
@@ -108,26 +141,13 @@ void destroy_registerArray(struct registerArray *regArray)
 {
     for (size_t i = 0; i < regArray->size; ++i)
     {
-        free(regArray->array[i].cmd);
+        char **command = regArray->array[i].cmd;
+        for(size_t j = 0; command[j] != NULL; ++j) {
+            free(command[j]);
+        }
+        free(command);
     }
+    free(regArray->array);
     regArray->size = 0;
     regArray->capacity = 0;
 }
-
-int main()
-{
-    setlocale(LC_ALL, "fr_FR.UTF-8");
-
-    char *cmd[] = {"ls", "-l", NULL};
-    struct reg reg = create_register(1, time(NULL), 0, cmd);
-    char *str = register_to_string(reg);
-    printf("%s\n", str);
-    free(str);
-
-    struct registerArray regArray = create_registerArray(1);
-    add_register(&regArray, reg);
-    destroy_registerArray(&regArray);
-    return 0;
-}
-
-// gcc -Wall -Wextra -std=c99 -pedantic -o data data.c
