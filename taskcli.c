@@ -168,7 +168,10 @@ void read_tasks() {
     }
     //-----------------------------------------------
 
-    close(fd);
+    if(close(fd) == -1) {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
 }
 
 

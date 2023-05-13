@@ -23,6 +23,7 @@ struct registerArray regArray;
 
 
 void exit_program(bool error){
+    while(wait(NULL) != -1);
     unlink(LINK_PID);
     if (regArray.capacity > 0) {
         destroy_registerArray(&regArray);
@@ -35,6 +36,10 @@ void exit_program(bool error){
 
 void sigint_handler(){
     exit_program(false);
+}
+
+void kill_handler(){
+    exit_program(true);
 }
 
 int getAvailableID() {
@@ -103,12 +108,37 @@ void task(){
         fprintf(stderr, "task open\n");
         exit_program(true);
     }
+
+    //-------------Locking the file------------------
+    struct flock lock;
+    lock.l_type = F_WRLCK;        // Write lock
+    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock.l_start = 0;             // Start offset for the lock
+    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+
+    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(tasks);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+
     char *line = register_to_string(reg);
     if(write(tasks, line, strlen(line)) == -1){
         fprintf(stderr, "task write\n");
         exit_program(true);
     }
     free(line);
+
+     //---------Unlocking the file--------------------
+    lock.l_type = F_UNLCK;
+    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(tasks);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+
     if(close(tasks) == -1){
         fprintf(stderr, "task close\n");
         exit_program(true);
@@ -256,6 +286,18 @@ int main() {
     a3.sa_flags = 0;
     sigemptyset(&a3.sa_mask);
     sigaction(SIGALRM, &a3, NULL);
+
+    struct sigaction a4;
+    a4.sa_handler = kill_handler;
+    a4.sa_flags = 0;
+    sigemptyset(&a4.sa_mask);
+    sigaction(SIGQUIT, &a4, NULL);
+
+    struct sigaction a5;
+    a5.sa_handler = kill_handler;
+    a5.sa_flags = 0;
+    sigemptyset(&a5.sa_mask);
+    sigaction(SIGTERM, &a5, NULL);
 
 
 
