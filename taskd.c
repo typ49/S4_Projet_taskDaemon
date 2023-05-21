@@ -363,6 +363,10 @@ int main() {
 
     time_t waitingTime;
     time_t last_checked = time(NULL) - 1;
+    sigset_t mask;
+    sigfillset(&mask);  
+    sigdelset(&mask, SIGUSR1);
+    sigdelset(&mask, SIGALRM); 
     while(1){
         // checking if there are some signals to handle
         if (usr1_receive) {
@@ -383,13 +387,13 @@ int main() {
             if (waitingTime == -1) {
                 // no command to execute
                 // we wait for a signal to add one
-                pause();
+                sigsuspend(&mask);
             } else if (waitingTime == 0) {
                 kill(getpid(), SIGALRM);
             } else {
                 alarm(waitingTime);
                 // we wait for a signal (SIGALRM or SIGUSR1)
-                pause();
+                sigsuspend(&mask);
             }
         }
     }
