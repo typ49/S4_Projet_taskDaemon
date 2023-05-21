@@ -18,6 +18,9 @@
 #define LINK_FIFO "/tmp/tasks.fifo"
 #define LINK_TASKS "/tmp/tasks.txt"
 
+volatile int usr1_receive = 0;
+volatile int alrm_receive = 0;
+
 // Global variables
 struct registerArray regArray;
 
@@ -67,6 +70,14 @@ int getAvailableID() {
     }
 
     return maxID + 1;
+}
+
+void sigusr1_handler(){
+    usr1_receive = 1;
+}
+
+void sigalrm_handler(){
+    alrm_receive = 1;
 }
 
 void task(){
@@ -187,21 +198,76 @@ struct registerArray get_currentTasks(){
     return currentTasks;
 }
 
-void sigalrm_handler() {
+void sigchld_handler() {
+    int status;
+    pid_t pid;
+
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        if (WIFEXITED(status)) {
+            printf("Le processus fils avec PID %d s'est terminé normalement avec le code de sortie : %d\n", pid, WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("Le processus fils avec PID %d s'est terminé à cause du signal : %d\n", pid, WTERMSIG(status));
+        }
+    }
+}
+
+void execute_tasks() {
     struct registerArray currentTasks = get_currentTasks();
     if (currentTasks.size == 0) {
-        perror("sigalrm_handler currentTasks.size is null");
+        perror("execute_tasks currentTasks.size is null");
         return;
     }
     for (size_t i = 0; i < currentTasks.size; ++i) {
         pid_t pid = fork();
         if (pid == -1) {
-            perror("sigalrm_handler fork");
+            perror("execute_tasks fork");
             exit_program(true);
         }
         if (pid == 0) {
+            // redirecting stdin to /dev/null
+            int devnull = open("/dev/null", O_RDONLY);
+            if (devnull == -1) {
+                perror("execute_tasks open");
+                exit_program(true);
+            }
+            if (dup2(devnull, fileno(stdin)) == -1) {
+                perror("execute_tasks dup2");
+                exit_program(true);
+            }
+            // redirecting stdout to /tmp/tasks/num_cmd.out
+            char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
+            if (path == NULL) {
+                perror("execute_tasks calloc");
+                exit_program(true);
+            }
+            sprintf(path, "/tmp/tasks/%ld.out", currentTasks.array[i].num_cmd);
+            int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+            if (out == -1) {
+                perror("execute_tasks open");
+                exit_program(true);
+            }
+            if (dup2(out, fileno(stdout)) == -1) {
+                perror("execute_tasks dup2");
+                exit_program(true);
+            }
+
+            // redirecting stderr to /tmp/tasks/num_cmd.err
+            sprintf(path, "/tmp/tasks/%ld.err", currentTasks.array[i].num_cmd);
+            int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+            if (err == -1) {
+                perror("execute_tasks open");
+                exit_program(true);
+            }
+            if (dup2(err, fileno(stderr)) == -1) {
+                perror("execute_tasks dup2");
+                exit_program(true);
+            }
+
+            free(path);
+
             execvp(currentTasks.array[i].cmd[0], currentTasks.array[i].cmd);
-            perror("sigalrm_handler execvp");
+            perror("execute_tasks execvp");
+            close(devnull);
             exit_program(true);
         }
         if(currentTasks.array[i].period == 0){
@@ -209,45 +275,7 @@ void sigalrm_handler() {
         }
     }
     destroy_registerArray(&currentTasks);
-    while (wait(NULL) != -1);   
-    sleep(1);
 }
-
-
-
-
-/**
- * init the registerArray with the tasks in tasks.txt
-*/
-// void init_regArray(){
-//     int tasks = open(LINK_TASKS, O_RDONLY);
-//     if(tasks == -1){
-//         fprintf(stderr, "init_regArray open\n");
-//         exit_program(true);
-//     }
-//     // reading the file's lines one by one
-//     // eache line is a task in the format : num_cmd;start;period;cmd
-//     char line[100]; // a line can't be longer than 100 characters
-//     while(read_line(tasks, line, sizeof(line)) != 0){
-//         // parsing the line
-//         size_t num_cmd;
-//         time_t start;
-//         size_t period;
-//         char **cmd;
-//         if(sscanf(line, "%d;%ld;%zu;", &num_cmd, &start, &period) != 3){
-//             fprintf(stderr, "init_regArray sscanf\n");
-//             exit_program(true);
-//         }
-//         cmd = recv_argv(tasks);
-//         if(cmd == NULL){
-//             fprintf(stderr, "init_regArray recv_argv\n");
-//             exit_program(true);
-//         }
-//         // creating the data structure
-//         struct reg reg = create_register(num_cmd, start, period, cmd);
-//         add_register(&regArray, reg);
-//     }
-// }
 
 int main() {
     // testing /tmp/taskd.pid existance with stats
@@ -276,7 +304,7 @@ int main() {
     sigaction(SIGINT, &a, NULL);
 
     struct sigaction a2;
-    a2.sa_handler = task;
+    a2.sa_handler = sigusr1_handler;
     a2.sa_flags = 0;
     sigemptyset(&a2.sa_mask);
     sigaction(SIGUSR1, &a2, NULL);
@@ -299,6 +327,11 @@ int main() {
     sigemptyset(&a5.sa_mask);
     sigaction(SIGTERM, &a5, NULL);
 
+    struct sigaction a6;
+    a6.sa_handler = sigchld_handler;
+    a6.sa_flags = 0;
+    sigemptyset(&a6.sa_mask);
+    sigaction(SIGCHLD, &a6, NULL);
 
 
     // creating the fifo if does not exist
@@ -310,7 +343,7 @@ int main() {
         }
     }
 
-    //S’il n’existe pas, créer le répertoire /tmp/tasks.
+    //if does not exist, creat /tmp/tasks directory.
     struct stat statbuf3;
     if (stat("/tmp/tasks", &statbuf3) == -1) {
         if (mkdir("/tmp/tasks", 0777)) {
@@ -319,7 +352,7 @@ int main() {
         }
     }
 
-    //S’il n’existe pas, créer le fichier /tmp/tasks.txt.
+    //if does not exist, creat /tmp/tasks.txt file.
     struct stat statbuf4;
     if (stat(LINK_TASKS, &statbuf4) == -1) {
         if (creat(LINK_TASKS, 0666)) {
@@ -329,18 +362,35 @@ int main() {
     }
 
     time_t waitingTime;
+    time_t last_checked = time(NULL) - 1;
     while(1){
-        waitingTime = get_waitingTime();
-        if (waitingTime == -1) {
-            // no command to execute
-            // we wait for a signal to add one
-            pause();
-        } else if (waitingTime == 0) {
-            kill(getpid(), SIGALRM);
-        } else {
-            alarm(waitingTime);
-            // we wait for a signal (SIGALRM)
-            pause();
+        // checking if there are some signals to handle
+        if (usr1_receive) {
+            usr1_receive = 0;
+            task();            
+        }
+        if (alrm_receive) {
+            alrm_receive = 0;
+            execute_tasks();
+            // if we just executed the currentTasks, we don't want
+            // to check for commands to execute in this timestamp.
+            last_checked = time(NULL);
+        }
+        if (last_checked != time(NULL)) {
+            last_checked = time(NULL);
+            waitingTime = get_waitingTime();
+            printf("waitingTime : %ld\n", waitingTime);
+            if (waitingTime == -1) {
+                // no command to execute
+                // we wait for a signal to add one
+                pause();
+            } else if (waitingTime == 0) {
+                kill(getpid(), SIGALRM);
+            } else {
+                alarm(waitingTime);
+                // we wait for a signal (SIGALRM or SIGUSR1)
+                pause();
+            }
         }
     }
     exit_program(true);

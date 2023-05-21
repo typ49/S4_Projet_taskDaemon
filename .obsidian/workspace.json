@@ -18,8 +18,21 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "418ce50a91402979",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Untitled.md",
+                "mode": "source",
+                "source": false
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -85,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "Untitled.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "README.md",
+                "file": "Untitled.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "README.md"
+                "file": "Untitled.md"
               }
             }
           }
@@ -146,8 +159,10 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "ccf00f50b37a5cd7",
+  "active": "418ce50a91402979",
   "lastOpenFiles": [
+    "README.md",
+    "Untitled.md",
     "taskd",
     "taskd.o",
     "taskcli",
@@ -157,8 +172,6 @@
     "time",
     "time.o",
     "sender",
-    "sender.o",
-    "receiver",
-    "README.md"
+    "sender.o"
   ]
 }
