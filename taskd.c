@@ -367,6 +367,9 @@ int main() {
     sigfillset(&mask);  
     sigdelset(&mask, SIGUSR1);
     sigdelset(&mask, SIGALRM); 
+    sigdelset(&mask, SIGINT);
+    sigdelset(&mask, SIGQUIT);
+    sigdelset(&mask, SIGTERM);
     while(1){
         // checking if there are some signals to handle
         if (usr1_receive) {
@@ -383,7 +386,6 @@ int main() {
         if (last_checked != time(NULL)) {
             last_checked = time(NULL);
             waitingTime = get_waitingTime();
-            printf("waitingTime : %ld\n", waitingTime);
             if (waitingTime == -1) {
                 // no command to execute
                 // we wait for a signal to add one
