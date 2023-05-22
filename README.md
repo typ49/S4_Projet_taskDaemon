@@ -27,6 +27,11 @@ __To clear every compiled programs :__
 make mrProper
 ```
 
+__To launch :__
+```sh
+./launch_daemon ABSOLUTE_PATH_TO_TASKD
+```
+
 ## Tools :
 > launch_daemon  -> TODO <br>
 > taskcli START PERIOD CMD [ARG]...  -> OVER<br>

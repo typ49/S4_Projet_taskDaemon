@@ -114,7 +114,7 @@ void task(){
     add_register(&regArray, reg);
     
     //open tasks.txt in append mode
-    int tasks = open(LINK_TASKS, O_WRONLY | O_APPEND, 0666);
+    int tasks = open(LINK_TASKS, O_WRONLY | O_APPEND , 0666);
     if(tasks == -1){
         fprintf(stderr, "task open\n");
         exit_program(true);
@@ -333,6 +333,30 @@ int main() {
     sigemptyset(&a6.sa_mask);
     sigaction(SIGCHLD, &a6, NULL);
 
+    //redirecting stdout to /tmp/taskd.out
+    char *path = "/tmp/taskd.out";
+    int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (out == -1) {
+        perror("execute_tasks open");
+        exit_program(true);
+    }
+    if (dup2(out, fileno(stdout)) == -1) {
+        perror("execute_tasks dup2");
+        exit_program(true);
+    }
+
+    // redirecting stderr to /tmp/taskd.err
+    path = "/tmp/taskd.err";
+    int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+    if (err == -1) {
+        perror("execute_tasks open");
+        exit_program(true);
+    }
+    if (dup2(err, fileno(stderr)) == -1) {
+        perror("execute_tasks dup2");
+        exit_program(true);
+    }
+
 
     // creating the fifo if does not exist
     struct stat statbuf2;
@@ -354,11 +378,14 @@ int main() {
 
     //if does not exist, creat /tmp/tasks.txt file.
     struct stat statbuf4;
-    if (stat(LINK_TASKS, &statbuf4) == -1) {
-        if (creat(LINK_TASKS, 0666)) {
-            perror("creat");
-            exit_program(true);
-        }
+    int tasks = open(LINK_TASKS, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (tasks == -1) {
+        perror("open");
+        exit_program(true);
+    }
+    if (close(tasks) == -1) {
+        perror("close");
+        exit_program(true);
     }
 
     time_t waitingTime;
@@ -370,6 +397,7 @@ int main() {
     sigdelset(&mask, SIGINT);
     sigdelset(&mask, SIGQUIT);
     sigdelset(&mask, SIGTERM);
+    sigdelset(&mask, SIGCHLD);
     while(1){
         // checking if there are some signals to handle
         if (usr1_receive) {

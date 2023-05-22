@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Untitled.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Untitled.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Untitled.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Untitled.md"
+                "file": "README.md"
               }
             }
           }
@@ -161,8 +161,8 @@
   },
   "active": "418ce50a91402979",
   "lastOpenFiles": [
-    "README.md",
-    "Untitled.md",
+    "launch_daemon",
+    "launch_daemon.o",
     "taskd",
     "taskd.o",
     "taskcli",
@@ -172,6 +172,7 @@
     "time",
     "time.o",
     "sender",
-    "sender.o"
+    "README.md",
+    "Untitled.md"
   ]
 }

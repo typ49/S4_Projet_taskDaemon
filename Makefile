@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -pedantic -I. -O2 -g -D_DEFAULT_SOURCE
 LDFLAGS = -L. -lmessage -ldata
 
-TARGETS = receiver sender time when taskcli taskd
+TARGETS = receiver sender time when taskcli taskd launch_daemon
 
 SRCS = $(wildcard *.c)
 
