@@ -277,6 +277,92 @@ void execute_tasks() {
     destroy_registerArray(&currentTasks);
 }
 
+
+// retire une commande de la liste courante des commandes à exécuter avec l’outil taskcli :
+// 1. Supprimer la commande de la liste des commandes à exécuter.
+// 2. Supprimer les fichiers de sortie de la commande.
+// 3. Supprimer la ligne correspondante dans le fichier tasks.txt.
+void delete_command (size_t index) {
+    if (index >= regArray.size) {
+        fprintf(stderr, "Error : delete_command index out of range\n");
+        exit_program(true);
+    }
+    // 1. Supprimer la commande de la liste des commandes à exécuter.
+    suppress_register(&regArray, regArray.array[index].num_cmd);
+    // 2. Supprimer les fichiers de sortie de la commande.
+    char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
+    if (path == NULL) {
+        perror("delete_command calloc");
+        exit_program(true);
+    }
+    sprintf(path, "/tmp/tasks/%ld.out", regArray.array[index].num_cmd);
+    if (unlink(path) == -1) {
+        perror("delete_command unlink");
+        exit_program(true);
+    }
+    sprintf(path, "/tmp/tasks/%ld.err", regArray.array[index].num_cmd);
+    if (unlink(path) == -1) {
+        perror("delete_command unlink");
+        exit_program(true);
+    }
+    free(path);
+    // 3. Supprimer la ligne correspondante dans le fichier tasks.txt.
+    int tasks = open(LINK_TASKS, O_RDWR, 0666);
+    if (tasks == -1) {
+        perror("delete_command open");
+        exit_program(true);
+    }
+    //-------------Locking the file------------------
+    struct flock lock;
+    lock.l_type = F_WRLCK;        // Write lock
+    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock.l_start = 0;             // Start offset for the lock
+    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+
+    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+        perror("delete_command fcntl");
+        close(tasks);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+    char *line = register_to_string(regArray.array[index]);
+    if (line == NULL) {
+        perror("delete_command register_to_string");
+        exit_program(true);
+    }
+    if (lseek(tasks, 0, SEEK_SET) == -1) {
+        perror("delete_command lseek");
+        exit_program(true);
+    }
+    char buffer[100];
+    while (read(tasks, buffer, sizeof(buffer)) > 0) {
+        if (strstr(buffer, line) != NULL) {
+            if (lseek(tasks, -strlen(buffer), SEEK_CUR) == -1) {
+                perror("delete_command lseek");
+                exit_program(true);
+            }
+            if (write(tasks, "\n", 1) == -1) {
+                perror("delete_command write");
+                exit_program(true);
+            }
+            break;
+        }
+    }
+    free(line);
+    //---------Unlocking the file--------------------
+    lock.l_type = F_UNLCK;
+    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+        perror("delete_command fcntl");
+        close(tasks);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+    if (close(tasks) == -1) {
+        perror("delete_command close");
+        exit_program(true);
+    }
+}
+
 int main() {
     // testing /tmp/taskd.pid existance with stats
     struct stat statbuf;

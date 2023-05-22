@@ -179,9 +179,11 @@ int main(int argc, char *argv[]) {
     if(argc == 1) {
         read_tasks();
         exit(0);
+    }else if (argc == 3) {
+        
     }else if(argc < 4) {
         fprintf(stderr, "Error : Invalid number of arguments.\n");
-        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli\n");
+        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine : ./taskcli\n");
         exit(1);
     }
 
