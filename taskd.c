@@ -202,7 +202,8 @@ void sigchld_handler() {
     int status;
     pid_t pid;
 
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+    pid = wait(NULL);
+    if (pid > 0) {
         if (WIFEXITED(status)) {
             printf("Le processus fils avec PID %d s'est terminé normalement avec le code de sortie : %d\n", pid, WEXITSTATUS(status));
         } else if (WIFSIGNALED(status)) {
@@ -221,6 +222,7 @@ void execute_tasks() {
         pid_t pid = fork();
         if (pid == -1) {
             perror("execute_tasks fork");
+            destroy_registerArray(&currentTasks);
             exit_program(true);
         }
         if (pid == 0) {
@@ -228,26 +230,31 @@ void execute_tasks() {
             int devnull = open("/dev/null", O_RDONLY);
             if (devnull == -1) {
                 perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
             if (dup2(devnull, fileno(stdin)) == -1) {
                 perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
             // redirecting stdout to /tmp/tasks/num_cmd.out
             char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
             if (path == NULL) {
                 perror("execute_tasks calloc");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
             sprintf(path, "/tmp/tasks/%ld.out", currentTasks.array[i].num_cmd);
             int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
             if (out == -1) {
                 perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
             if (dup2(out, fileno(stdout)) == -1) {
                 perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
 
@@ -256,10 +263,12 @@ void execute_tasks() {
             int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
             if (err == -1) {
                 perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
             if (dup2(err, fileno(stderr)) == -1) {
                 perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
                 exit_program(true);
             }
 
@@ -463,7 +472,6 @@ int main() {
     }
 
     //if does not exist, creat /tmp/tasks.txt file.
-    struct stat statbuf4;
     int tasks = open(LINK_TASKS, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (tasks == -1) {
         perror("open");

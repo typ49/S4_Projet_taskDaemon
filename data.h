@@ -36,7 +36,7 @@ struct reg copy_reg(const struct reg *source);
 /**
  * Get the register to the format : num_cmd;start;period;cmd '\n'
  * 
- * With start beeing the lettre version of the start time for exemple :
+ * With start beeing the letter version of the start time for exemple :
  * 
  * 3;18 avril 10:44:57;0;ls /tmp/tasks
  * 

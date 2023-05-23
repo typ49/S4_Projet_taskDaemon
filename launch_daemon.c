@@ -39,15 +39,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Grandchild process (daemon)
-    umask(0); // Set file mode creation mask to 0
     if (chdir("/") == -1) {
         perror("chdir");
         return 1;
-    }
-
-    // Close all open file descriptors
-    for (int fd = sysconf(_SC_OPEN_MAX); fd > 0; --fd) {
-        close(fd);
     }
 
     // Execute the taskd program
