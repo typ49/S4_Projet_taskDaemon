@@ -4,11 +4,23 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+/**
+ * Launch the daemon given in argument
+*/
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s ABSOLUTE_PATH_TO_TASKD\n", argv[0]);
         return 1;
     }
+
+    // // setup the library path
+    // const char* variableName = "LD_LIBRARY_PATH";
+    // const char* variableValue = "/home/bido/licence/SYS/S4_Projet_taskDaemon/";
+    //
+    // int result = setenv(variableName, variableValue, 1);
+    // if (result != 0) {
+    //     return 1;
+    // }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -20,7 +32,6 @@ int main(int argc, char *argv[]) {
         // Parent process
         int status;
         waitpid(pid, &status, 0);
-        printf("Daemon process started with PID %d.\n", pid);
         return 0;
     }
 
@@ -35,6 +46,7 @@ int main(int argc, char *argv[]) {
 
     if (pid2 > 0) {
         // First child process terminates, leaving the grandchild as the daemon
+        printf("Daemon process started with PID %d.\n", pid2);
         exit(0);
     }
 

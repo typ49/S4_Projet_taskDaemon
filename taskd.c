@@ -429,7 +429,7 @@ int main() {
     struct stat statbuf;
     if (stat(LINK_PID, &statbuf) != -1) {
         fprintf(stderr, "Error : A process is currently running taskd.\n");
-        exit_program(true);
+        exit(EXIT_FAILURE);
     }
     
     FILE *f = fopen(LINK_PID, "w");
