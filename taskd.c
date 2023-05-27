@@ -106,14 +106,15 @@ void task(){
 
     char **command = recv_argv(fifo); // is free when its container register is destroyed
     if(command == NULL){
-        fprintf(stderr, "Error : recv_argv\n");
+        fprintf(stderr, "Error : recv_argv");
         exit_program(true);
     }
 
     //creating the data structure
-    struct reg reg = create_register(getAvailableID(), start_time, period_time, command);
+    struct reg reg;
+    create_register(&reg, getAvailableID(), start_time, period_time, command);
     add_register(&regArray, reg);
-    
+
     //open tasks.txt in append mode
     int tasks = open(LINK_TASKS, O_WRONLY | O_APPEND , 0666);
     if(tasks == -1){
@@ -122,13 +123,13 @@ void task(){
     }
 
     //-------------Locking the file------------------
-    struct flock lock;
-    lock.l_type = F_WRLCK;        // Write lock
-    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
-    lock.l_start = 0;             // Start offset for the lock
-    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+    struct flock lock2;
+    lock2.l_type = F_WRLCK;        // Write lock
+    lock2.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock2.l_start = 0;             // Start offset for the lock
+    lock2.l_len = 0;               // Lock the entire file; 0 means to EOF
 
-    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+    if (fcntl(tasks, F_SETLKW, &lock2) == -1) {
         perror("fcntl");
         close(tasks);
         exit(EXIT_FAILURE);
@@ -143,8 +144,8 @@ void task(){
     free(line);
 
      //---------Unlocking the file--------------------
-    lock.l_type = F_UNLCK;
-    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
+    lock2.l_type = F_UNLCK;
+    if (fcntl(tasks, F_SETLKW, &lock2) == -1) {
         perror("fcntl");
         close(tasks);
         exit(EXIT_FAILURE);
@@ -164,12 +165,6 @@ void task(){
  * 
  * @param path Path to the directory
 */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <sys/stat.h>
 
 int remove_directory_content(const char *path) {
     DIR *d = opendir(path);
@@ -561,7 +556,7 @@ int main() {
         // checking if there are some signals to handle
         if (usr1_receive) {
             usr1_receive = 0;
-            task();            
+            task();
         }
         if (alrm_receive) {
             alrm_receive = 0;

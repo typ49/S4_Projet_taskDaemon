@@ -6,15 +6,14 @@
 
 #include "data.h"
 
-struct reg create_register(size_t num_cmd, time_t start, size_t period, char **cmd)
+void create_register(struct reg *dest, size_t num_cmd, time_t start, size_t period, char **cmd)
 {
-    struct reg reg;
-    reg.num_cmd = num_cmd;
-    reg.start = start;
-    reg.period = period;
-    reg.cmd = cmd;
-    return reg;
+    dest->num_cmd = num_cmd;
+    dest->start = start;
+    dest->period = period;
+    dest->cmd = cmd;
 }
+
 
 struct reg copy_reg(const struct reg *source) {
     struct reg copy;
@@ -44,6 +43,39 @@ struct reg copy_reg(const struct reg *source) {
     copy.cmd[cmd_count] = NULL;
     return copy;
 }
+// void copy_reg(const struct reg *source, struct reg *dest) {
+
+//     //checking that none of the pointers are NULL
+//     if (source == NULL || dest == NULL) {
+//         perror("copy_reg NULL pointer");
+//         exit(EXIT_FAILURE);
+//     }
+
+//     dest->num_cmd = source->num_cmd;
+//     dest->start = source->start;
+//     dest->period = source->period;
+
+//     size_t cmd_count = 0;
+//     while (source->cmd[cmd_count] != NULL) {
+//         cmd_count++;
+//     }
+
+//     dest->cmd = calloc((cmd_count + 1), sizeof(char *));
+//     if (dest->cmd == NULL) {
+//         perror("copy_reg malloc");
+//         exit(EXIT_FAILURE);
+//     }
+
+//     for (size_t i = 0; i < cmd_count; ++i) {
+//         dest->cmd[i] = strdup(source->cmd[i]);
+//         if (dest->cmd[i] == NULL) {
+//             perror("copy_reg strdup");
+//             exit(EXIT_FAILURE);
+//         }
+//     }
+// }
+
+
 
 
 char *register_to_string(struct reg reg)
@@ -127,15 +159,22 @@ void suppress_register(struct registerArray *regArray, size_t num_cmd)
         if (regArray->array[i].num_cmd == num_cmd)
         {
             char **command = regArray->array[i].cmd;
-            for(size_t j = 0; command[j] != NULL; ++j) {
+            for (size_t j = 0; command[j] != NULL; ++j) {
                 free(command[j]);
             }
             free(command);
+
+            // Déplacer le dernier élément vers la position à supprimer
+            regArray->array[i] = regArray->array[regArray->size - 1];
+
+            // Mettre à jour la taille du tableau
             regArray->size--;
+
             return;
         }
     }
 }
+
 
 void destroy_registerArray(struct registerArray *regArray)
 {

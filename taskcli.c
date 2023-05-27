@@ -112,13 +112,33 @@ void sender(char *argv[], time_t st, time_t pe){
         exit(EXIT_FAILURE);
     }
 
-    
+    //-------------Locking the fifo------------------
+    struct flock lock;
+    lock.l_type = F_WRLCK;        // Write lock
+    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock.l_start = 0;             // Start offset for the lock
+    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+
+    if (fcntl(fifo, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(fifo);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
 
     send_string(fifo, start);
     send_string(fifo, periode);
 
     send_command(fifo, argv + 3);
     
+    //---------Unlocking the fifo--------------------
+    lock.l_type = F_UNLCK;
+    if (fcntl(fifo, F_SETLKW, &lock) == -1) {
+        perror("fcntl");
+        close(fifo);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
 
     free(start);
     free(periode);

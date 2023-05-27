@@ -13,14 +13,14 @@ struct reg {
 /**
  * Create a register with the given parameters
  * 
+ * @param dest The register to fill
  * @param num_cmd Number of the command
  * @param start Start time
  * @param period Period in seconds between two executions
  * @param cmd[] The command to execute (with its arguments) last argument must be NULL
  * 
- * @return The reg
 */
-struct reg create_register(size_t num_cmd, time_t start, size_t period, char *cmd[]);
+void create_register(struct reg *dest, size_t num_cmd, time_t start, size_t period, char **cmd);
 
 
 /**
