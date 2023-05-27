@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <dirent.h>
 
 
 #include "message.h"
@@ -157,6 +158,62 @@ void task(){
 
     close(fifo);
 }
+
+/**
+ * @brief Removes all the content of a directory
+ * 
+ * @param path Path to the directory
+*/
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+int remove_directory_content(const char *path) {
+    DIR *d = opendir(path);
+    size_t path_len = strlen(path);
+    int r = -1;
+
+    if (d) {
+        struct dirent *p;
+        r = 0;
+
+        while (r == 0 && (p = readdir(d))) {
+            int r2 = -1;
+            char *buf;
+            size_t len;
+
+            /* Skip the names "." and ".." as we don't want to recurse on them. */
+            if (strcmp(p->d_name, ".") == 0 || strcmp(p->d_name, "..") == 0)
+                continue;
+
+            len = path_len + strlen(p->d_name) + 2; 
+            buf = malloc(len);
+
+            if (buf) {
+                struct stat statbuf;
+                snprintf(buf, len, "%s/%s", path, p->d_name);
+
+                if (!stat(buf, &statbuf)) {
+                    if (!S_ISDIR(statbuf.st_mode)) // check if it is not a directory
+                        r2 = unlink(buf);
+                }
+
+                free(buf);
+            }
+
+            r = r2;
+        }
+
+        closedir(d);
+    }
+
+    return r;
+}
+
+
 
 /**
  * Get the waiting time before the next task
@@ -373,7 +430,7 @@ void delete_command (size_t index) {
 }
 
 int main() {
-    // testing /tmp/taskd.pid existance with stats
+    // testing /tmp/taskd.pid existance with statsu 0 en cas de succ
     struct stat statbuf;
     if (stat(LINK_PID, &statbuf) != -1) {
         fprintf(stderr, "Error : A process is currently running taskd.\n");
@@ -472,6 +529,7 @@ int main() {
     }
 
     //if does not exist, creat /tmp/tasks.txt file.
+    //for now, we will empty the file if it exists.
     int tasks = open(LINK_TASKS, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (tasks == -1) {
         perror("open");
@@ -481,6 +539,13 @@ int main() {
         perror("close");
         exit_program(true);
     }
+    //also for now, we will empty the /tmp/tasks directory.
+    int r = remove_directory_content("/tmp/tasks");
+    if(r != 0){
+        fprintf(stderr, "Error : remove_directory_content : /tmp/tasks\n");
+        exit_program(true);
+    }
+
 
     time_t waitingTime;
     time_t last_checked = time(NULL) - 1;
