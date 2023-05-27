@@ -22,14 +22,14 @@ time_t get_start(char *argv[]){
         start = current + strtol(argv[1], &endptr, 10);
         if (*endptr != '\0') {
             fprintf(stderr, "Invalid start : %s\n", argv[1]);
-            fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli\n");
+            fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\nUsage : ./taskcli\n");
             exit(1);
         }
     } else {
         start = strtol(argv[1], &endptr, 10);
         if (*endptr != '\0') {
             fprintf(stderr, "Invalid start : %s\n", argv[1]);
-            fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli\n");
+            fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\nUsage : ./taskcli\n");
             exit(1);
         }
     }
@@ -41,7 +41,7 @@ time_t get_periode(char *argv[]){
     size_t period = strtol(argv[2], &endptr, 10);
     if(*endptr != '\0') {
         fprintf(stderr, "Invalid preriode : %s", argv[2]);
-        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli\n");
+        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\nUsage : ./taskcli\n");
         exit(1);
     }
     return period;
@@ -200,10 +200,27 @@ int main(int argc, char *argv[]) {
         read_tasks();
         exit(0);
     }else if (argc == 3) {
+        if(strcmp(argv[1], "-d") == 0) {
+            int num = atoi(argv[2]);
+            if(num == 0) {
+                fprintf(stderr, "Error : Invalid number of command line.\n");
+                fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\n : ./taskcli\n");
+                exit(1);
+            }
+            for(int i = 0; i < num; i++) {
+                read_tasks();
+            }
+            exit(0);
+        }else {
+            fprintf(stderr, "Error : Invalid option.\n");
+            fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\n : ./taskcli\n");
+            exit(1);
+        }
+        
         
     }else if(argc < 4) {
         fprintf(stderr, "Error : Invalid number of arguments.\n");
-        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine : ./taskcli\n");
+        fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\n : ./taskcli\n");
         exit(1);
     }
 
