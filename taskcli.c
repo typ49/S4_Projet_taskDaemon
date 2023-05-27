@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include "message.h"
 
@@ -195,9 +196,9 @@ void read_tasks() {
 }
 
 
-void send_delete(argv) {
+void send_delete(char *argv[]) {
     //on vérifie que argv[2] est bien un nombre
-    for (int i = 0; i < strlen(argv[2]); i++) {
+    for (size_t i = 0; i < strlen(argv[2]); i++) {
         if (!isdigit(argv[2][i])) {
             fprintf(stderr, "Error : Invalid number of command line.\n");
             fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\n : ./taskcli\n");
@@ -264,11 +265,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
         exit(0);
-    }
-
-            
-
-        
     }else if(argc < 4) {
         fprintf(stderr, "Error : Invalid number of arguments.\n");
         fprintf(stderr, "Usage : ./taskcli START PERIOD CMD [ARG]...\nUsage : ./taskcli -d numCommandLine\n : ./taskcli\n");

@@ -231,7 +231,7 @@ time_t get_waitingTime() {
             }
         } else {
             // regArray.array[i].start > now
-            time_t delta = regArray.array[i].start - now;
+            time_t delta = regArray.array[i].start - now - 1;
             if (delta < min || min == -1) {
                 min = delta;
             }
