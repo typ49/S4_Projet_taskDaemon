@@ -20,6 +20,7 @@
 #define LINK_TASKS "/tmp/tasks.txt"
 
 volatile int usr1_receive = 0;
+volatile int usr2_receive = 0;
 volatile int alrm_receive = 0;
 
 // Global variables
@@ -75,6 +76,10 @@ int getAvailableID() {
 
 void sigusr1_handler(){
     usr1_receive = 1;
+}
+
+void sigusr2_handler() {
+    usr2_receive = 1;
 }
 
 void sigalrm_handler(){
@@ -349,128 +354,116 @@ void execute_tasks() {
 }
 
 
+
+
 // retire une commande de la liste courante des commandes à exécuter avec l’outil taskcli :
-// 1. Supprimer la commande de la liste des commandes à exécuter.
-// 2. Supprimer les fichiers de sortie de la commande.
-// 3. Supprimer la ligne correspondante dans le fichier tasks.txt.
-void delete_command (size_t index) {
-    if (index >= regArray.size) {
-        fprintf(stderr, "Error : delete_command index out of range\n");
+// 1. Supprimer les fichiers de sortie de la commande.
+// 2. Supprimer la ligne correspondante dans le fichier tasks.txt.
+// 3. Supprimer la commande de la liste des commandes à exécuter.
+void delete_command () {
+    int fifo = open(LINK_FIFO, O_RDONLY);
+    if (fifo == -1) {
+        perror("sigusr2_handler open");
         exit_program(true);
     }
-    // 1. Supprimer la commande de la liste des commandes à exécuter.
-    suppress_register(&regArray, regArray.array[index].num_cmd);
-    // 2. Supprimer les fichiers de sortie de la commande.
+    char *num_s = recv_string(fifo);
+    if (close(fifo) == -1) {
+        perror("sigusr2_handler fclose");
+        exit_program(true);
+    }
+    if (num_s == NULL) {
+        perror("sigusr2_handler recv_string");
+        close(fifo);
+        exit_program(true);
+    }
+    size_t num = atol(num_s);
+    free(num_s);
+    // 1. Supprimer les fichiers de sortie de la commande.
     char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
     if (path == NULL) {
         perror("delete_command calloc");
         exit_program(true);
     }
-    sprintf(path, "/tmp/tasks/%ld.out", regArray.array[index].num_cmd);
+    sprintf(path, "/tmp/tasks/%ld.out", num);
     if (unlink(path) == -1) {
         perror("delete_command unlink");
         exit_program(true);
     }
-    sprintf(path, "/tmp/tasks/%ld.err", regArray.array[index].num_cmd);
+    sprintf(path, "/tmp/tasks/%ld.err", num);
     if (unlink(path) == -1) {
         perror("delete_command unlink");
         exit_program(true);
     }
     free(path);
-    // 3. Supprimer la ligne correspondante dans le fichier tasks.txt.
+
+    // 2. Supprimer la ligne correspondante dans le fichier tasks.txt.
     int tasks = open(LINK_TASKS, O_RDWR, 0666);
     if (tasks == -1) {
         perror("delete_command open");
         exit_program(true);
     }
-    //-------------Locking the file------------------
-    struct flock lock;
-    lock.l_type = F_WRLCK;        // Write lock
-    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
-    lock.l_start = 0;             // Start offset for the lock
-    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
 
-    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
-        perror("delete_command fcntl");
-        close(tasks);
-        exit(EXIT_FAILURE);
-    }
-    //-----------------------------------------------
-    char *line = register_to_string(regArray.array[index]);
-    if (line == NULL) {
-        perror("delete_command register_to_string");
+    // Création d'un fichier temporaire
+    int tmp_fd = open("/tmp/temp_tasks.txt", O_RDWR | O_CREAT, 0666);
+    if (tmp_fd == -1) {
+        perror("delete_command open tmp");
         exit_program(true);
     }
-    if (lseek(tasks, 0, SEEK_SET) == -1) {
-        perror("delete_command lseek");
-        exit_program(true);
-    }
+
     char buffer[100];
-    while (read(tasks, buffer, sizeof(buffer)) > 0) {
-        if (strstr(buffer, line) != NULL) {
-            if (lseek(tasks, -strlen(buffer), SEEK_CUR) == -1) {
-                perror("delete_command lseek");
-                exit_program(true);
+    ssize_t bytesRead;
+    char num_str[50];
+    sprintf(num_str, "%ld", num);  // Convertir num_cmd en chaîne pour la recherche
+
+    while ((bytesRead = read(tasks, buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[bytesRead] = '\0'; // Assurer que le buffer est une chaîne valide
+        char* line = buffer;
+        char* endLine;
+
+        do {
+            endLine = strchr(line, '\n');
+            if (endLine != NULL) {
+                *endLine = '\0';
             }
-            if (write(tasks, "\n", 1) == -1) {
-                perror("delete_command write");
-                exit_program(true);
+
+            if (strncmp(line, num_str, strlen(num_str)) != 0) { // Si le début de la ligne ne correspond pas à num_cmd
+                if (write(tmp_fd, line, strlen(line)) == -1 || write(tmp_fd, "\n", 1) == -1) {
+                    perror("delete_command write");
+                    exit_program(true);
+                }
             }
-            break;
-        }
+
+            if (endLine != NULL) {
+                line = endLine + 1;
+            }
+        } while (endLine != NULL && *line != '\0');
     }
-    free(line);
-    //---------Unlocking the file--------------------
-    lock.l_type = F_UNLCK;
-    if (fcntl(tasks, F_SETLKW, &lock) == -1) {
-        perror("delete_command fcntl");
-        close(tasks);
-        exit(EXIT_FAILURE);
+
+    // Suppression de l'ancien fichier et renommage du fichier temporaire
+    if (unlink(LINK_TASKS) == -1) {
+        perror("delete_command unlink");
+        exit_program(true);
     }
-    //-----------------------------------------------
+
+    if (rename("/tmp/temp_tasks.txt", LINK_TASKS) == -1) {
+        perror("delete_command rename");
+        exit_program(true);
+    }
+
+    if (close(tmp_fd) == -1) {
+        perror("delete_command close tmp");
+        exit_program(true);
+    }
+
     if (close(tasks) == -1) {
         perror("delete_command close");
         exit_program(true);
     }
+
+    // 3. Supprimer la commande de la liste des commandes à exécuter.
+    suppress_register(&regArray, num);
 }
 
-void sigusr2_handler() {
-    FILE *fifo = fopen(LINK_FIFO, "r");
-    //-------------Locking the file------------------
-    struct flock lock;
-    lock.l_type = F_WRLCK;        // Write lock
-    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
-    lock.l_start = 0;             // Start offset for the lock
-    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
-
-    if (fcntl(fileno(fifo), F_SETLKW, &lock) == -1) {
-        perror("sigusr2_handler fcntl");
-        fclose(fifo);
-        exit(EXIT_FAILURE);
-    }
-    //-----------------------------------------------
-    char *num = recv_string(fileno(fifo));
-    if (num == NULL) {
-        perror("sigusr2_handler recv_string");
-        fclose(fifo);
-        exit_program(true);
-    }
-    size_t index = atol(num);
-    free(num);
-    delete_command(index);
-    //---------Unlocking the file--------------------
-    lock.l_type = F_UNLCK;
-    if (fcntl(fileno(fifo), F_SETLKW, &lock) == -1) {
-        perror("sigusr2_handler fcntl");
-        fclose(fifo);
-        exit(EXIT_FAILURE);
-    }
-    //-----------------------------------------------
-    if (fclose(fifo) == -1) {
-        perror("sigusr2_handler fclose");
-        exit_program(true);
-    }
-}
 
 int main() {
     // testing /tmp/taskd.pid existance with statsu 0 en cas de succ
@@ -491,7 +484,6 @@ int main() {
     // creating the registerArray
     regArray = create_registerArray(10);
     
-
     struct sigaction a;
     a.sa_handler = sigint_handler;
     a.sa_flags = 0;
@@ -612,6 +604,10 @@ int main() {
         if (usr1_receive) {
             usr1_receive = 0;
             task();
+        }
+        if (usr2_receive) {
+            usr2_receive = 0;
+            delete_command();
         }
         if (alrm_receive) {
             alrm_receive = 0;

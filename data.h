@@ -86,6 +86,15 @@ void add_register(struct registerArray *regArray, struct reg reg);
 */
 void suppress_register(struct registerArray *regArray, size_t num_cmd);
 
+/**
+ * Get the register from the register array with the given number
+ * 
+ * @param regArray The register array
+ * @param num_cmd The number of the command to get
+ * 
+ * @return The register
+*/
+struct reg getRegisterFromNumCmd(struct registerArray *regArray, size_t num_cmd);
 
 /**
  * Destroy the register array and free the memory

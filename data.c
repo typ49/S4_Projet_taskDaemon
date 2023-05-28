@@ -173,8 +173,24 @@ void suppress_register(struct registerArray *regArray, size_t num_cmd)
             return;
         }
     }
+    fprintf(stderr, "No register with num_cmd %zu\n", num_cmd);
 }
 
+struct reg getRegisterFromNumCmd(struct registerArray *regArray, size_t num_cmd){
+    printf("getRegisterFromNumCmd num_cmd = %ld\n", num_cmd);
+    for(size_t i = 0; i < regArray->size; ++i){
+        if(regArray->array[i].num_cmd == num_cmd){
+            return regArray->array[i];
+        }
+    }
+    fprintf(stderr, "Error : getRegisterFromNumCmd num_cmd not found\n");
+    struct reg reg;
+    reg.num_cmd = 0;
+    reg.start = 0;
+    reg.period = 0;
+    reg.cmd = NULL;
+    return reg;
+}
 
 void destroy_registerArray(struct registerArray *regArray)
 {
