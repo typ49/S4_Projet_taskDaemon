@@ -225,12 +225,15 @@ time_t get_waitingTime() {
                 // return -1 for a period of 0 seconds
                 return 0;
             }
+            // -1 because do not want to execute the task this second
             time_t delta = regArray.array[i].period - (now - regArray.array[i].start) % regArray.array[i].period - 1;
             if (delta < min || min == -1) {
                 min = delta;
             }
         } else {
             // regArray.array[i].start > now
+
+            // -1 because do not want to execute the task this second
             time_t delta = regArray.array[i].start - now - 1;
             if (delta < min || min == -1) {
                 min = delta;
@@ -247,6 +250,7 @@ struct registerArray get_currentTasks(){
         if (regArray.array[i].period == 0){
             add_register(&currentTasks, copy_reg(&regArray.array[i]));
         }else{
+            // -1 because do not want to execute the task this second
             time_t delta = regArray.array[i].period - (now - regArray.array[i].start) % regArray.array[i].period - 1;
             if (delta == 0) {
                 add_register(&currentTasks, copy_reg(&regArray.array[i]));
