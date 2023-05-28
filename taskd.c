@@ -434,6 +434,44 @@ void delete_command (size_t index) {
     }
 }
 
+void sigusr2_handler(int signum) {
+    FILE *fifo;
+    //-------------Locking the file------------------
+    struct flock lock;
+    lock.l_type = F_WRLCK;        // Write lock
+    lock.l_whence = SEEK_SET;     // Offset is relative to the start of the file
+    lock.l_start = 0;             // Start offset for the lock
+    lock.l_len = 0;               // Lock the entire file; 0 means to EOF
+
+    if (fcntl(fileno(fifo), F_SETLKW, &lock) == -1) {
+        perror("sigusr2_handler fcntl");
+        fclose(fifo);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+    char *num = recv_string(fileno(fifo));
+    if (num == NULL) {
+        perror("sigusr2_handler recv_string");
+        fclose(fifo);
+        exit_program(true);
+    }
+    size_t index = atol(num);
+    free(num);
+    delete_command(index);
+    //---------Unlocking the file--------------------
+    lock.l_type = F_UNLCK;
+    if (fcntl(fileno(fifo), F_SETLKW, &lock) == -1) {
+        perror("sigusr2_handler fcntl");
+        fclose(fifo);
+        exit(EXIT_FAILURE);
+    }
+    //-----------------------------------------------
+    if (fclose(fifo) == -1) {
+        perror("sigusr2_handler fclose");
+        exit_program(true);
+    }
+}
+
 int main() {
     // testing /tmp/taskd.pid existance with statsu 0 en cas de succ
     struct stat statbuf;
@@ -491,7 +529,7 @@ int main() {
     sigaction(SIGCHLD, &a6, NULL);
 
     struct sigaction a7;
-    a7.sa_handler = sigchld_handler;
+    a7.sa_handler = sigusr2_handler;
     a7.sa_flags = 0;
     sigemptyset(&a7.sa_mask);
     sigaction(SIGUSR2, &a7, NULL);
