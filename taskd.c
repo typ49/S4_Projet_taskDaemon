@@ -155,7 +155,7 @@ void task(){
     if(close(tasks) == -1){
         fprintf(stderr, "task close\n");
         exit_program(true);
-    }
+    }26794.
 
     close(fifo);
 }
@@ -263,13 +263,13 @@ struct registerArray get_currentTasks(){
 void sigchld_handler() {
     int status;
     pid_t pid;
-
+    // waiting for the child process that send the signal
     pid = wait(NULL);
     if (pid > 0) {
         if (WIFEXITED(status)) {
-            printf("Le processus fils avec PID %d s'est terminé normalement avec le code de sortie : %d\n", pid, WEXITSTATUS(status));
+            fprintf(stderr, "Le processus fils avec PID %d s'est terminé normalement avec le code de sortie : %d\n", pid, WEXITSTATUS(status));
         } else if (WIFSIGNALED(status)) {
-            printf("Le processus fils avec PID %d s'est terminé à cause du signal : %d\n", pid, WTERMSIG(status));
+            fprintf(stderr,"Le processus fils avec PID %d s'est terminé à cause du signal : %d\n", pid, WTERMSIG(status));
         }
     }
 }
