@@ -14,6 +14,7 @@
 
 #include "message.h"
 #include "data.h"
+#include "chain.h"
 
 #define LINK_PID "/tmp/tasks.pid"
 #define LINK_FIFO "/tmp/tasks.fifo"
@@ -23,12 +24,21 @@ volatile int usr1_receive = 0;
 volatile int usr2_receive = 0;
 volatile int alrm_receive = 0;
 
+struct chain *children_pid;
+
 // Global variables
 struct registerArray regArray;
 
 
 void exit_program(bool error){
-    while(wait(NULL) != -1);
+    // terminating the children
+    printf("Terminating the children\n");
+    while (children_pid->head != NULL) {
+        kill(children_pid->head->value, SIGKILL);
+        remove_from_chain(children_pid);
+    }
+    free(children_pid);
+
     unlink(LINK_PID);
     if (regArray.capacity > 0) {
         destroy_registerArray(&regArray);
@@ -277,80 +287,7 @@ void sigchld_handler() {
             fprintf(stderr,"Le processus fils avec PID %d s'est terminé à cause du signal : %d\n", pid, WTERMSIG(status));
         }
     }
-}
-
-void execute_tasks() {
-    struct registerArray currentTasks = get_currentTasks();
-    if (currentTasks.size == 0) {
-        perror("execute_tasks currentTasks.size is null");
-        return;
-    }
-    for (size_t i = 0; i < currentTasks.size; ++i) {
-        pid_t pid = fork();
-        if (pid == -1) {
-            perror("execute_tasks fork");
-            destroy_registerArray(&currentTasks);
-            exit_program(true);
-        }
-        if (pid == 0) {
-            // redirecting stdin to /dev/null
-            int devnull = open("/dev/null", O_RDONLY);
-            if (devnull == -1) {
-                perror("execute_tasks open");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-            if (dup2(devnull, fileno(stdin)) == -1) {
-                perror("execute_tasks dup2");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-            // redirecting stdout to /tmp/tasks/num_cmd.out
-            char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
-            if (path == NULL) {
-                perror("execute_tasks calloc");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-            sprintf(path, "/tmp/tasks/%ld.out", currentTasks.array[i].num_cmd);
-            int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
-            if (out == -1) {
-                perror("execute_tasks open");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-            if (dup2(out, fileno(stdout)) == -1) {
-                perror("execute_tasks dup2");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-
-            // redirecting stderr to /tmp/tasks/num_cmd.err
-            sprintf(path, "/tmp/tasks/%ld.err", currentTasks.array[i].num_cmd);
-            int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
-            if (err == -1) {
-                perror("execute_tasks open");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-            if (dup2(err, fileno(stderr)) == -1) {
-                perror("execute_tasks dup2");
-                destroy_registerArray(&currentTasks);
-                exit_program(true);
-            }
-
-            free(path);
-
-            execvp(currentTasks.array[i].cmd[0], currentTasks.array[i].cmd);
-            perror("execute_tasks execvp");
-            close(devnull);
-            exit_program(true);
-        }
-        if(currentTasks.array[i].period == 0){
-            suppress_register(&regArray, currentTasks.array[i].num_cmd);
-        }
-    }
-    destroy_registerArray(&currentTasks);
+    remove_from_chain_at_value(children_pid, pid);
 }
 
 
@@ -360,24 +297,8 @@ void execute_tasks() {
 // 1. Supprimer les fichiers de sortie de la commande.
 // 2. Supprimer la ligne correspondante dans le fichier tasks.txt.
 // 3. Supprimer la commande de la liste des commandes à exécuter.
-void delete_command () {
-    int fifo = open(LINK_FIFO, O_RDONLY);
-    if (fifo == -1) {
-        perror("sigusr2_handler open");
-        exit_program(true);
-    }
-    char *num_s = recv_string(fifo);
-    if (close(fifo) == -1) {
-        perror("sigusr2_handler fclose");
-        exit_program(true);
-    }
-    if (num_s == NULL) {
-        perror("sigusr2_handler recv_string");
-        close(fifo);
-        exit_program(true);
-    }
-    size_t num = atol(num_s);
-    free(num_s);
+void delete_register_from_Arrayreg(size_t num) {
+    
     // 1. Supprimer les fichiers de sortie de la commande.
     char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
     if (path == NULL) {
@@ -463,6 +384,102 @@ void delete_command () {
     // 3. Supprimer la commande de la liste des commandes à exécuter.
     suppress_register(&regArray, num);
 }
+void delete_command(){
+    int fifo = open(LINK_FIFO, O_RDONLY);
+    if (fifo == -1) {
+        perror("sigusr2_handler open");
+        exit_program(true);
+    }
+    char *num_s = recv_string(fifo);
+    if (close(fifo) == -1) {
+        perror("sigusr2_handler fclose");
+        exit_program(true);
+    }
+    if (num_s == NULL) {
+        perror("sigusr2_handler recv_string");
+        close(fifo);
+        exit_program(true);
+    }
+    size_t num = atol(num_s);
+    free(num_s);
+    delete_register_from_Arrayreg(num);
+}
+
+void execute_tasks() {
+    struct registerArray currentTasks = get_currentTasks();
+    if (currentTasks.size == 0) {
+        perror("execute_tasks currentTasks.size is null");
+        return;
+    }
+    for (size_t i = 0; i < currentTasks.size; ++i) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("execute_tasks fork");
+            destroy_registerArray(&currentTasks);
+            exit_program(true);
+        }
+        if (pid == 0) {
+            // redirecting stdin to /dev/null
+            int devnull = open("/dev/null", O_RDONLY);
+            if (devnull == -1) {
+                perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+            if (dup2(devnull, fileno(stdin)) == -1) {
+                perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+            // redirecting stdout to /tmp/tasks/num_cmd.out
+            char *path = calloc(sizeof(char), 36); // 20 pour num_cmd + 16 pour [/tmp/tasks/] + [.out] + [\0]
+            if (path == NULL) {
+                perror("execute_tasks calloc");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+            sprintf(path, "/tmp/tasks/%ld.out", currentTasks.array[i].num_cmd);
+            int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+            if (out == -1) {
+                perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+            if (dup2(out, fileno(stdout)) == -1) {
+                perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+
+            // redirecting stderr to /tmp/tasks/num_cmd.err
+            sprintf(path, "/tmp/tasks/%ld.err", currentTasks.array[i].num_cmd);
+            int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+            if (err == -1) {
+                perror("execute_tasks open");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+            if (dup2(err, fileno(stderr)) == -1) {
+                perror("execute_tasks dup2");
+                destroy_registerArray(&currentTasks);
+                exit_program(true);
+            }
+
+            free(path);
+
+            execvp(currentTasks.array[i].cmd[0], currentTasks.array[i].cmd);
+            perror("execute_tasks execvp");
+            close(devnull);
+            exit_program(true);
+        }
+        add_to_chain(children_pid, pid);
+        if(currentTasks.array[i].period == 0){
+            suppress_register(&regArray, currentTasks.array[i].num_cmd);
+        }
+    }
+    destroy_registerArray(&currentTasks);
+}
+
 
 
 int main() {
@@ -526,29 +543,29 @@ int main() {
     sigemptyset(&a7.sa_mask);
     sigaction(SIGUSR2, &a7, NULL);
 
-    //redirecting stdout to /tmp/taskd.out
-    char *path = "/tmp/taskd.out";
-    int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
-    if (out == -1) {
-        perror("execute_tasks open");
-        exit_program(true);
-    }
-    if (dup2(out, fileno(stdout)) == -1) {
-        perror("execute_tasks dup2");
-        exit_program(true);
-    }
+    // //redirecting stdout to /tmp/taskd.out
+    // char *path = "/tmp/taskd.out";
+    // int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+    // if (out == -1) {
+    //     perror("execute_tasks open");
+    //     exit_program(true);
+    // }
+    // if (dup2(out, fileno(stdout)) == -1) {
+    //     perror("execute_tasks dup2");
+    //     exit_program(true);
+    // }
 
-    // redirecting stderr to /tmp/taskd.err
-    path = "/tmp/taskd.err";
-    int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
-    if (err == -1) {
-        perror("execute_tasks open");
-        exit_program(true);
-    }
-    if (dup2(err, fileno(stderr)) == -1) {
-        perror("execute_tasks dup2");
-        exit_program(true);
-    }
+    // // redirecting stderr to /tmp/taskd.err
+    // path = "/tmp/taskd.err";
+    // int err = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
+    // if (err == -1) {
+    //     perror("execute_tasks open");
+    //     exit_program(true);
+    // }
+    // if (dup2(err, fileno(stderr)) == -1) {
+    //     perror("execute_tasks dup2");
+    //     exit_program(true);
+    // }
 
 
     // creating the fifo if does not exist
@@ -587,7 +604,7 @@ int main() {
         exit_program(true);
     }
 
-
+    children_pid = create_chain();
     time_t waitingTime;
     time_t last_checked = time(NULL) - 1;
     sigset_t mask;

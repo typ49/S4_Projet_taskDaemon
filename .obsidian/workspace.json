@@ -166,9 +166,9 @@
   },
   "active": "a68d774472885964",
   "lastOpenFiles": [
+    "taskd",
     "launch_daemon",
     "launch_daemon.o",
-    "taskd",
     "taskd.o",
     "taskcli",
     "taskcli.o",
