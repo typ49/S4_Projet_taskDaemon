@@ -155,7 +155,7 @@ void task(){
     if(close(tasks) == -1){
         fprintf(stderr, "task close\n");
         exit_program(true);
-    }26794.
+    }
 
     close(fifo);
 }
@@ -434,8 +434,8 @@ void delete_command (size_t index) {
     }
 }
 
-void sigusr2_handler(int signum) {
-    FILE *fifo;
+void sigusr2_handler() {
+    FILE *fifo = fopen(LINK_FIFO, "r");
     //-------------Locking the file------------------
     struct flock lock;
     lock.l_type = F_WRLCK;        // Write lock
