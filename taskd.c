@@ -486,6 +486,12 @@ int main() {
     sigemptyset(&a6.sa_mask);
     sigaction(SIGCHLD, &a6, NULL);
 
+    struct sigaction a7;
+    a7.sa_handler = sigchld_handler;
+    a7.sa_flags = 0;
+    sigemptyset(&a7.sa_mask);
+    sigaction(SIGUSR2, &a7, NULL);
+
     //redirecting stdout to /tmp/taskd.out
     char *path = "/tmp/taskd.out";
     int out = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666);
@@ -558,6 +564,7 @@ int main() {
     sigdelset(&mask, SIGQUIT);
     sigdelset(&mask, SIGTERM);
     sigdelset(&mask, SIGCHLD);
+    sigdelset(&mask, SIGUSR2);
     while(1){
         // checking if there are some signals to handle
         if (usr1_receive) {
